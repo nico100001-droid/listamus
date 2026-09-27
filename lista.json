@@ -1,18 +1,15 @@
 [
     {
-    "id": 1,
     "artista": "Rata blanca",
     "album": "Mago Espadas y Rosas",
     "item_id": "rata-blanca-magos-espadas-y-rosas-1990"
   },
     {
-    "id": 2,
     "artista": "Rata Blanca",
     "album": "El Último Ataque",
     "item_id": "rata-blanca-el-ultimo-ataque"
-  }
+  },
   {
-    "id": 3,
     "artista": "Artista B",
     "album": "Sencillo MP3",
     "tipo": "mp3",
