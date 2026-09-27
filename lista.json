@@ -13,6 +13,13 @@
     "tipo": "m3u",
     "url": "https://ia903204.us.archive.org/0/items/rata-blanca-el-ultimo-ataque/rata-blanca-el-ultimo-ataque_vbr.m3u"
   },
+    {
+    "id": 1,
+    "artista": "Rata blanca",
+    "album": "Mago Espadas y Rosas",
+    "tipo": "m3u",
+    "url": "https://ia801604.us.archive.org/16/items/rata-blanca-magos-espadas-y-rosas-1990/rata-blanca-magos-espadas-y-rosas-1990_vbr.m3u"
+  },
   {
     "id": 2,
     "artista": "Artista B",
