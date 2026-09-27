@@ -1,234 +1,422 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reproductor de Audio</title>
-  <style>
-    :root {
-      --bg-color: #121212;
-      --card-bg: #1e1e1e;
-      --primary-color: #1db954;
-      --text-color: #ffffff;
-      --text-secondary: #b3b3b3;
-      --border-radius: 8px; /* Bordes más redondeados para contenedores */
-      --btn-border-radius: 20px; /* Bordes redondeados para botones */
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Winamp Web Player</title>
+    <style>
+        body { 
+            font-family: 'Consolas', 'Courier New', monospace; 
+            max-width: 700px; 
+            margin: auto; 
+            padding: 15px; 
+            background-color: #121212; 
+            color: #e0e0e0; 
+        }
+        h2, h3 { margin-top: 0; color: #00ff66; text-transform: uppercase; }
+        
+        .seccion { 
+            background: #1e1e1e; 
+            border: 1px solid #333; 
+            border-radius: 4px; 
+            padding: 15px; 
+            margin-bottom: 15px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+        }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+        /* Pantalla visual estilo Winamp */
+        .pantalla-winamp {
+            background-color: #000;
+            border: 1px solid #00ff66;
+            padding: 10px;
+            border-radius: 3px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
 
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      padding: 20px;
-      min-height: 100vh;
-    }
+        #info-pista {
+            color: #00ff66;
+            font-size: 14px;
+            margin: 0 0 8px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
-    /* 1. Reproductor superior con oscilador */
-    .player-top {
-      background-color: var(--card-bg);
-      border-radius: var(--border-radius);
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 15px;
-      width: 100%;
-    }
+        /* Canvas del Osciloscopio */
+        #visualizador {
+            width: 100%;
+            height: 80px;
+            background-color: #050505;
+            border: 1px solid #222;
+            display: block;
+        }
 
-    canvas#oscillator {
-      width: 100%;
-      height: 120px;
-      background-color: #000000;
-      border-radius: 6px;
-    }
+        /* Controles estilo ciberpunk/retro */
+        .controles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            justify-content: center;
+            margin-top: 10px;
+        }
 
-    .controls {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+        .controles button, .btn-accion { 
+            padding: 8px 12px; 
+            cursor: pointer; 
+            border: 1px solid #00ff66; 
+            background-color: #111; 
+            color: #00ff66; 
+            font-weight: bold;
+            font-family: inherit;
+            border-radius: 2px; 
+            transition: all 0.2s ease;
+        }
 
-    button {
-      background-color: #282828;
-      color: var(--text-color);
-      border: 1px solid #333;
-      padding: 10px 18px;
-      border-radius: var(--btn-border-radius); /* Redondeado aplicado */
-      cursor: pointer;
-      font-size: 14px;
-      transition: background-color 0.2s, border-color 0.2s;
-    }
+        .controles button:hover, .btn-accion:hover { 
+            background-color: #00ff66; 
+            color: #000;
+        }
 
-    button:hover {
-      background-color: #3e3e3e;
-      border-color: #555;
-    }
+        input[type="text"] { 
+            width: 100%; 
+            padding: 10px; 
+            margin-bottom: 10px; 
+            box-sizing: border-box; 
+            border: 1px solid #444; 
+            background-color: #2a2a2a;
+            color: #fff;
+            font-family: inherit;
+            border-radius: 3px; 
+        }
 
-    button.active {
-      background-color: var(--primary-color);
-      color: #000;
-      font-weight: bold;
-    }
+        /* Listas de reproducción */
+        .lista { list-style: none; padding: 0; margin: 0; }
+        .lista li { 
+            padding: 8px; 
+            border-bottom: 1px solid #2a2a2a; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            font-size: 13px;
+        }
 
-    /* 2. Contenido principal: Catálogo y Lista de reproducción contiguos */
-    .main-content {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      width: 100%;
-      flex-grow: 1;
-    }
-
-    .panel {
-      background-color: var(--card-bg);
-      border-radius: var(--border-radius);
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-
-    .panel h2 {
-      font-size: 18px;
-      border-bottom: 1px solid #333;
-      padding-bottom: 10px;
-      color: var(--text-secondary);
-    }
-
-    /* Estilos del Catálogo de Álbumes */
-    .album-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 15px;
-    }
-
-    .album-card {
-      background-color: #282828;
-      border-radius: 6px;
-      padding: 10px;
-      text-align: center;
-      cursor: pointer;
-    }
-
-    .album-card:hover {
-      background-color: #333;
-    }
-
-    /* Estilos de la Lista de Reproducción */
-    .playlist-items {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .playlist-item {
-      background-color: #282828;
-      padding: 10px 15px;
-      border-radius: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-    }
-
-    .playlist-item.active {
-      border-left: 4px solid var(--primary-color);
-      background-color: #333;
-    }
-
-    @media (max-width: 768px) {
-      .main-content {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+        .activo { 
+            background-color: #1b3a20; 
+            border-left: 4px solid #00ff66; 
+            color: #00ff66;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
 
-  <!-- Reproductor con Oscilador (Arriba) -->
-  <section class="player-top">
-    <canvas id="oscillator"></canvas>
-    <div class="track-info">
-      <span id="current-track-title">Seleccionar pista</span>
+    <!-- Módulo Reproductor Principal -->
+    <div class="seccion">
+        <div class="pantalla-winamp">
+            <h2 id="info-pista">WINAMP // SELECCIONAR PISTA</h2>
+            <canvas id="visualizador" width="600" height="80"></canvas>
+        </div>
+        
+        <audio id="reproductor" crossorigin="anonymous" style="width: 100%; margin-bottom: 10px;" controls></audio>
+        
+        <div class="controles">
+            <button onclick="cambiarTema(-1)">&lt;&lt; ANT</button>
+            <button onclick="saltarTiempo(-10)">-10S</button>
+            <button onclick="togglePlayPausa()">PLAY / PAUSE</button>
+            <button onclick="saltarTiempo(10)">+10S</button>
+            <button onclick="cambiarTema(1)">SIG &gt;&gt;</button>
+        </div>
     </div>
-    <div class="controls">
-      <button id="btn-prev">Anterior</button>
-      <button id="btn-play">Play</button>
-      <button id="btn-next">Siguiente</button>
-      <!-- Botón Aleatorio -->
-      <button id="btn-shuffle" title="Reproducción Aleatoria">Aleatorio</button>
+
+    <!-- Módulo Catálogo de Álbumes -->
+    <div class="seccion">
+        <h3>Catálogo de Álbumes</h3>
+        <input type="text" id="buscador-album" placeholder="Buscar artista o álbum..." onkeyup="filtrarAlbumes()">
+        <ul id="lista-albumes" class="lista"></ul>
     </div>
-  </section>
 
-  <!-- Sección Inferior: Catálogo de Álbumes | Lista de Reproducción -->
-  <div class="main-content">
-    
-    <!-- Catálogo de Álbumes -->
-    <section class="panel catalog-panel">
-      <h2>Catálogo de Álbumes</h2>
-      <div class="album-grid">
-        <div class="album-card">Álbum 1</div>
-        <div class="album-card">Álbum 2</div>
-        <div class="album-card">Álbum 3</div>
-        <div class="album-card">Álbum 4</div>
-      </div>
-    </section>
+    <!-- Módulo Pistas del Álbum Actual -->
+    <div class="seccion">
+        <h3>Pistas de la Lista Actual</h3>
+        <ul id="lista-pistas" class="lista"></ul>
+    </div>
 
-    <!-- Lista de Reproducción -->
-    <section class="panel playlist-panel">
-      <h2>Lista de Reproducción</h2>
-      <ul class="playlist-items" id="playlist">
-        <li class="playlist-item active">1. Pista de Ejemplo A</li>
-        <li class="playlist-item">2. Pista de Ejemplo B</li>
-        <li class="playlist-item">3. Pista de Ejemplo C</li>
-        <li class="playlist-item">4. Pista de Ejemplo D</li>
-      </ul>
-    </section>
+    <!-- Módulo Listas Personalizadas (Memoria Local) -->
+    <div class="seccion">
+        <h3>Listas Guardadas (Memoria Local)</h3>
+        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+            <input type="text" id="nombre-nueva-lista" placeholder="Nombre de lista nueva..." style="margin-bottom: 0;">
+            <button class="btn-accion" onclick="crearListaPropia()">Crear</button>
+        </div>
+        <div id="contenedor-listas-propias"></div>
+    </div>
 
-  </div>
+    <script>
+        let baseAlbumes = [];
+        let pistasCargadas = [];
+        let indiceActual = -1;
+        let listasPersonalizadas = JSON.parse(localStorage.getItem('mis_listas')) || {};
 
-  <script>
-    // Lógica del botón Aleatorio (Shuffle)
-    const btnShuffle = document.getElementById('btn-shuffle');
-    let isShuffle = false;
+        const reproductor = document.getElementById('reproductor');
+        const infoPista = document.getElementById('info-pista');
+        const listaAlbumesUI = document.getElementById('lista-albumes');
+        const listaPistasUI = document.getElementById('lista-pistas');
 
-    btnShuffle.addEventListener('click', () => {
-      isShuffle = !isShuffle;
-      btnShuffle.classList.toggle('active', isShuffle);
-    });
+        // --- MOTOR DEL VISUALIZADOR DE ONDA (WEB AUDIO API) ---
+        let audioCtx;
+        let analizador;
+        let fuenteNodo;
+        let visualizadorInicializado = false;
 
-    // Inicialización del oscilador en Canvas
-    const canvas = document.getElementById('oscillator');
-    const ctx = canvas.getContext('2d');
+        const canvas = document.getElementById('visualizador');
+        const canvasCtx = canvas.getContext('2d');
 
-    function drawOscillator() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.beginPath();
-      ctx.strokeStyle = '#1db954';
-      ctx.lineWidth = 2;
+        function inicializarVisualizador() {
+            if (visualizadorInicializado) return;
+            
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analizador = audioCtx.createAnalyser();
+                analizador.fftSize = 2048;
+                
+                fuenteNodo = audioCtx.createMediaElementSource(reproductor);
+                fuenteNodo.connect(analizador);
+                analizador.connect(audioCtx.destination);
+                
+                visualizadorInicializado = true;
+                dibujarOsciloscopio();
+            } catch (e) {
+                console.error("Error al inicializar AudioContext:", e);
+            }
+        }
 
-      const height = canvas.height;
-      const width = canvas.width;
-      ctx.moveTo(0, height / 2);
+        function dibujarOsciloscopio() {
+            requestAnimationFrame(dibujarOsciloscopio);
 
-      for (let x = 0; x < width; x++) {
-        const y = Math.sin(x * 0.05) * 20 + (height / 2);
-        ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-    }
+            const bufferLongitud = analizador.frequencyBinCount;
+            const datosTiempo = new Uint8Array(bufferLongitud);
+            analizador.getByteTimeDomainData(datosTiempo);
 
-    drawOscillator();
-  </script>
+            canvasCtx.fillStyle = '#050505';
+            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+            canvasCtx.lineWidth = 2;
+            canvasCtx.strokeStyle = '#00ff66';
+            canvasCtx.beginPath();
+
+            const anchoAncho = (canvas.width * 1.0) / bufferLongitud;
+            let x = 0;
+
+            for (let i = 0; i < bufferLongitud; i++) {
+                const v = datosTiempo[i] / 128.0;
+                const y = (v * canvas.height) / 2;
+
+                if (i === 0) {
+                    canvasCtx.moveTo(x, y);
+                } else {
+                    canvasCtx.lineTo(x, y);
+                }
+                x += anchoAncho;
+            }
+
+            canvasCtx.lineTo(canvas.width, canvas.height / 2);
+            canvasCtx.stroke();
+        }
+
+        // --- CARGA DE DATOS Y CATALOGO ---
+        fetch('lista.json')
+            .then(res => res.json())
+            .then(datos => {
+                baseAlbumes = datos;
+                renderizarAlbumes(baseAlbumes);
+            })
+            .catch(err => console.error("Error al cargar lista.json:", err));
+
+        function renderizarAlbumes(lista) {
+            listaAlbumesUI.innerHTML = '';
+            lista.forEach((item) => {
+                let li = document.createElement('li');
+                
+                if (item.item_id) {
+                    li.innerHTML = `<span><strong>${item.artista}</strong> - ${item.album} (Álbum)</span>
+                                    <button class="btn-accion" onclick="cargarAlbum('${item.item_id}', '${escapeQuotes(item.artista)}', '${escapeQuotes(item.album)}')">Cargar Álbum</button>`;
+                } else if (item.url_mp3) {
+                    li.innerHTML = `<span><strong>${item.artista}</strong> - ${item.album} (Pista)</span>
+                                    <button class="btn-accion" onclick="cargarTemaIndividual('${escapeQuotes(item.artista)}', '${escapeQuotes(item.album)}', '${escapeQuotes(item.url_mp3)}')">Cargar Tema</button>`;
+                }
+                listaAlbumesUI.appendChild(li);
+            });
+        }
+
+        function filtrarAlbumes() {
+            const texto = document.getElementById('buscador-album').value.toLowerCase();
+            const filtrados = baseAlbumes.filter(item => 
+                item.artista.toLowerCase().includes(texto) ||
+                item.album.toLowerCase().includes(texto)
+            );
+            renderizarAlbumes(filtrados);
+        }
+
+        async function cargarAlbum(itemId, artista, album) {
+            pistasCargadas = [];
+            infoPista.textContent = "CARGANDO DESDE ARCHIVE.ORG...";
+            const urlApi = `https://archive.org/metadata/${itemId}`;
+
+            try {
+                const respuesta = await fetch(urlApi);
+                if (!respuesta.ok) throw new Error('Error al conectar con la API');
+                
+                const datos = await respuesta.json();
+
+                const archivosAudio = datos.files.filter(f => 
+                    f.format === 'VBR MP3' || 
+                    f.format === 'MP3' || 
+                    (f.name && f.name.toLowerCase().endsWith('.mp3'))
+                );
+
+                if (archivosAudio.length === 0) {
+                    alert('No se encontraron archivos MP3 en este recurso.');
+                    infoPista.textContent = "SELECCIONAR PISTA";
+                    return;
+                }
+
+                pistasCargadas = archivosAudio.map(f => ({
+                    titulo: `${artista} - ${f.title || f.name}`,
+                    url: `https://archive.org/download/${itemId}/${encodeURIComponent(f.name)}`
+                }));
+
+                renderizarPistas();
+                cargarPista(0);
+
+            } catch (e) {
+                console.error('Error al procesar metadatos:', e);
+                alert('No se pudieron obtener las pistas del álbum.');
+                infoPista.textContent = "ERROR AL CARGAR";
+            }
+        }
+
+        function cargarTemaIndividual(artista, album, url) {
+            pistasCargadas = [{
+                titulo: `${artista} - ${album}`,
+                url: url
+            }];
+            renderizarPistas();
+            cargarPista(0);
+        }
+
+        function renderizarPistas() {
+            listaPistasUI.innerHTML = '';
+            pistasCargadas.forEach((pista, idx) => {
+                let li = document.createElement('li');
+                if (idx === indiceActual) li.classList.add('activo');
+                
+                li.innerHTML = `<span onclick="cargarPista(${idx})" style="cursor:pointer; flex-grow: 1;">${pista.titulo}</span>
+                                <button class="btn-accion" onclick="agregarAPistaGuardada('${escapeQuotes(pista.titulo)}', '${escapeQuotes(pista.url)}')">+ GUARDAR</button>`;
+                listaPistasUI.appendChild(li);
+            });
+        }
+
+        function escapeQuotes(cadena) {
+            return cadena ? cadena.replace(/'/g, "\\'") : '';
+        }
+
+        function cargarPista(indice) {
+            if (indice >= 0 && indice < pistasCargadas.length) {
+                indiceActual = indice;
+                reproductor.src = pistasCargadas[indiceActual].url;
+                infoPista.textContent = pistasCargadas[indiceActual].titulo;
+                
+                // Activar audio context para el osciloscopio
+                inicializarVisualizador();
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                reproductor.play();
+                renderizarPistas();
+            }
+        }
+
+        // --- CONTROLES DE REPRODUCCIÓN ---
+        function togglePlayPausa() {
+            inicializarVisualizador();
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            if (reproductor.paused) {
+                reproductor.play();
+            } else {
+                reproductor.pause();
+            }
+        }
+
+        function saltarTiempo(segundos) {
+            reproductor.currentTime += segundos;
+        }
+
+        function cambiarTema(direccion) {
+            cargarPista(indiceActual + direccion);
+        }
+
+        reproductor.onended = () => cambiarTema(1);
+
+        // --- MEMORIA LOCAL (LOCALSTORAGE) ---
+        function crearListaPropia() {
+            const input = document.getElementById('nombre-nueva-lista');
+            const nombre = input.value.trim();
+            if (nombre && !listasPersonalizadas[nombre]) {
+                listasPersonalizadas[nombre] = [];
+                guardarListasEnStorage();
+                input.value = '';
+                renderizarListasPropia();
+            }
+        }
+
+        function agregarAPistaGuardada(titulo, url) {
+            const nombresListas = Object.keys(listasPersonalizadas);
+            if (nombresListas.length === 0) {
+                alert('Cree una lista personalizada en el módulo inferior primero.');
+                return;
+            }
+            const destino = prompt(`Escriba el nombre de la lista de destino:\n${nombresListas.join('\n')}`);
+            if (destino && listasPersonalizadas[destino]) {
+                listasPersonalizadas[destino].push({ titulo, url });
+                guardarListasEnStorage();
+                renderizarListasPropia();
+            } else if (destino) {
+                alert('La lista especificada no existe.');
+            }
+        }
+
+        function cargarListaPersonalizada(nombreLista) {
+            pistasCargadas = listasPersonalizadas[nombreLista];
+            renderizarPistas();
+            if (pistasCargadas.length > 0) cargarPista(0);
+        }
+
+        function guardarListasEnStorage() {
+            localStorage.setItem('mis_listas', JSON.stringify(listasPersonalizadas));
+        }
+
+        function renderizarListasPropia() {
+            const contenedor = document.getElementById('contenedor-listas-propias');
+            contenedor.innerHTML = '';
+            for (let nombre in listasPersonalizadas) {
+                let div = document.createElement('div');
+                div.style.margin = "8px 0";
+                div.style.display = "flex";
+                div.style.justifyContent = "space-between";
+                div.style.alignItems = "center";
+                div.innerHTML = `<span><strong>${nombre}</strong> (${listasPersonalizadas[nombre].length} temas)</span>
+                                 <button class="btn-accion" onclick="cargarListaPersonalizada('${nombre}')">REPRODUCIR</button>`;
+                contenedor.appendChild(div);
+            }
+        }
+
+        // Carga inicial
+        renderizarListasPropia();
+    </script>
 </body>
 </html>
