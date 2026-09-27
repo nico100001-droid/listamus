@@ -8,126 +8,88 @@
     :root {
       --bg-color: #121212;
       --card-bg: #1e1e1e;
-      --border-color: #333333;
-      --text-color: #e0e0e0;
-      --accent-color: #007acc;
-      --accent-hover: #0099ff;
-      --border-radius: 8px;
+      --primary-color: #1db954;
+      --text-color: #ffffff;
+      --text-secondary: #b3b3b3;
+      --border-radius: 8px; /* Bordes más redondeados para contenedores */
+      --btn-border-radius: 20px; /* Bordes redondeados para botones */
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
     body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       background-color: var(--bg-color);
       color: var(--text-color);
-      padding: 20px;
-    }
-
-    /* Estructura Principal */
-    .app-container {
       display: flex;
       flex-direction: column;
       gap: 20px;
-      max-width: 1200px;
-      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
     }
 
-    /* BLOQUE SUPERIOR: REPRODUCTOR Y OSCILADOR */
-    .player-section {
+    /* 1. Reproductor superior con oscilador */
+    .player-top {
       background-color: var(--card-bg);
-      border: 1px solid var(--border-color);
       border-radius: var(--border-radius);
       padding: 20px;
       display: flex;
       flex-direction: column;
+      align-items: center;
       gap: 15px;
+      width: 100%;
     }
 
-    .track-info {
-      font-size: 1.1rem;
-      font-weight: 600;
-      text-align: center;
-    }
-
-    .canvas-container {
+    canvas#oscillator {
       width: 100%;
       height: 120px;
-      background-color: #000;
-      border-radius: var(--border-radius);
-      overflow: hidden;
+      background-color: #000000;
+      border-radius: 6px;
     }
 
-    canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
-    .player-controls {
+    .controls {
       display: flex;
       align-items: center;
-      justify-content: center;
       gap: 12px;
-      flex-wrap: wrap;
     }
 
-    /* Estilo de Botones */
-    .btn {
-      border-radius: var(--border-radius);
-      border: 1px solid var(--border-color);
-      padding: 10px 18px;
-      background-color: #2a2a2a;
+    button {
+      background-color: #282828;
       color: var(--text-color);
-      font-size: 0.9rem;
-      font-weight: 500;
+      border: 1px solid #333;
+      padding: 10px 18px;
+      border-radius: var(--btn-border-radius); /* Redondeado aplicado */
       cursor: pointer;
-      transition: background-color 0.2s ease, border-color 0.2s ease;
+      font-size: 14px;
+      transition: background-color 0.2s, border-color 0.2s;
     }
 
-    .btn:hover {
-      background-color: #383838;
+    button:hover {
+      background-color: #3e3e3e;
       border-color: #555;
     }
 
-    .btn.active {
-      background-color: var(--accent-color);
-      border-color: var(--accent-hover);
-      color: #fff;
+    button.active {
+      background-color: var(--primary-color);
+      color: #000;
+      font-weight: bold;
     }
 
-    .volume-control {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-left: 10px;
-    }
-
-    input[type="range"] {
-      accent-color: var(--accent-color);
-      cursor: pointer;
-    }
-
-    /* BLOQUE INFERIOR: PARALELO (CATÁLOGO Y PLAYLIST) */
-    .content-grid {
+    /* 2. Contenido principal: Catálogo y Lista de reproducción contiguos */
+    .main-content {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 20px;
-    }
-
-    @media (max-width: 768px) {
-      .content-grid {
-        grid-template-columns: 1fr;
-      }
+      width: 100%;
+      flex-grow: 1;
     }
 
     .panel {
       background-color: var(--card-bg);
-      border: 1px solid var(--border-color);
       border-radius: var(--border-radius);
       padding: 20px;
       display: flex;
@@ -136,350 +98,137 @@
     }
 
     .panel h2 {
-      font-size: 1.2rem;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 8px;
+      font-size: 18px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 10px;
+      color: var(--text-secondary);
     }
 
-    /* Catálogo de Álbumes */
+    /* Estilos del Catálogo de Álbumes */
     .album-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 15px;
     }
 
     .album-card {
       background-color: #282828;
-      border: 1px solid var(--border-color);
-      border-radius: var(--border-radius);
+      border-radius: 6px;
       padding: 10px;
       text-align: center;
       cursor: pointer;
-      transition: transform 0.2s ease, background-color 0.2s ease;
     }
 
     .album-card:hover {
       background-color: #333;
-      transform: translateY(-2px);
     }
 
-    .album-cover {
-      width: 100%;
-      aspect-ratio: 1;
-      background-color: #444;
-      border-radius: calc(var(--border-radius) - 2px);
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.8rem;
-      color: #aaa;
-    }
-
-    /* Lista de Reproducción */
-    .playlist {
+    /* Estilos de la Lista de Reproducción */
+    .playlist-items {
       list-style: none;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      max-height: 350px;
-      overflow-y: auto;
     }
 
     .playlist-item {
-      padding: 10px 12px;
-      background-color: #252525;
-      border: 1px solid var(--border-color);
-      border-radius: var(--border-radius);
+      background-color: #282828;
+      padding: 10px 15px;
+      border-radius: 6px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       cursor: pointer;
-      transition: background-color 0.2s ease;
     }
 
-    .playlist-item:hover {
-      background-color: #303030;
+    .playlist-item.active {
+      border-left: 4px solid var(--primary-color);
+      background-color: #333;
     }
 
-    .playlist-item.playing {
-      border-color: var(--accent-color);
-      background-color: #1a2a3a;
+    @media (max-width: 768px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
 
-  <div class="app-container">
+  <!-- Reproductor con Oscilador (Arriba) -->
+  <section class="player-top">
+    <canvas id="oscillator"></canvas>
+    <div class="track-info">
+      <span id="current-track-title">Seleccionar pista</span>
+    </div>
+    <div class="controls">
+      <button id="btn-prev">Anterior</button>
+      <button id="btn-play">Play</button>
+      <button id="btn-next">Siguiente</button>
+      <!-- Botón Aleatorio -->
+      <button id="btn-shuffle" title="Reproducción Aleatoria">Aleatorio</button>
+    </div>
+  </section>
+
+  <!-- Sección Inferior: Catálogo de Álbumes | Lista de Reproducción -->
+  <div class="main-content">
     
-    <!-- BLOQUE SUPERIOR: REPRODUCTOR CON OSCILADOR -->
-    <section class="player-section">
-      <div class="track-info" id="currentTrackTitle">Selecciona una pista</div>
-      
-      <div class="canvas-container">
-        <canvas id="oscillatorCanvas"></canvas>
-      </div>
-      
-      <div class="player-controls">
-        <button id="btnPrev" class="btn">Anterior</button>
-        <button id="btnPlay" class="btn">Reproducir</button>
-        <button id="btnNext" class="btn">Siguiente</button>
-        <button id="btnShuffle" class="btn">Aleatorio</button>
-        
-        <div class="volume-control">
-          <label for="volumeSlider">Vol.</label>
-          <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.8">
-        </div>
+    <!-- Catálogo de Álbumes -->
+    <section class="panel catalog-panel">
+      <h2>Catálogo de Álbumes</h2>
+      <div class="album-grid">
+        <div class="album-card">Álbum 1</div>
+        <div class="album-card">Álbum 2</div>
+        <div class="album-card">Álbum 3</div>
+        <div class="album-card">Álbum 4</div>
       </div>
     </section>
 
-    <!-- BLOQUE INFERIOR: CATÁLOGO Y PLAYLIST EN PARALELO -->
-    <div class="content-grid">
-      
-      <!-- Catálogo de Álbumes -->
-      <section class="panel">
-        <h2>Catálogo de Álbumes</h2>
-        <div class="album-grid" id="albumGrid">
-          <!-- Renderizado dinámico -->
-        </div>
-      </section>
-
-      <!-- Lista de Reproducción -->
-      <section class="panel">
-        <h2>Lista de Reproducción</h2>
-        <ul class="playlist" id="playlistTracks">
-          <!-- Renderizado dinámico -->
-        </ul>
-      </section>
-
-    </div>
+    <!-- Lista de Reproducción -->
+    <section class="panel playlist-panel">
+      <h2>Lista de Reproducción</h2>
+      <ul class="playlist-items" id="playlist">
+        <li class="playlist-item active">1. Pista de Ejemplo A</li>
+        <li class="playlist-item">2. Pista de Ejemplo B</li>
+        <li class="playlist-item">3. Pista de Ejemplo C</li>
+        <li class="playlist-item">4. Pista de Ejemplo D</li>
+      </ul>
+    </section>
 
   </div>
 
-  <audio id="audioPlayer" crossOrigin="anonymous"></audio>
-
   <script>
-    // Datos de ejemplo
-    const albumsData = [
-      { id: 1, title: 'Álbum Sintetizador', artist: 'Artista A' },
-      { id: 2, title: 'Frecuencia Cero', artist: 'Artista B' },
-      { id: 3, title: 'Ondas Analógicas', artist: 'Artista C' },
-      { id: 4, title: 'Modular Session', artist: 'Artista D' }
-    ];
-
-    const initialPlaylist = [
-      { title: 'Tono Senoidal 440Hz', src: 'https://actions.google.com/sounds/v1/alarms/beep_short.ogg', duration: '0:03' },
-      { title: 'Secuencia Digital', src: 'https://actions.google.com/sounds/v1/ambiences/rain_heavy.ogg', duration: '0:30' },
-      { title: 'Pulso Eléctrico', src: 'https://actions.google.com/sounds/v1/science_fiction/scifi_laser.ogg', duration: '0:02' },
-      { title: 'Ambiente Estático', src: 'https://actions.google.com/sounds/v1/weather/wind_synthetic.ogg', duration: '0:15' }
-    ];
-
-    // Variables de Estado
-    let playlist = [...initialPlaylist];
-    let currentTrackIndex = 0;
-    let isPlaying = false;
+    // Lógica del botón Aleatorio (Shuffle)
+    const btnShuffle = document.getElementById('btn-shuffle');
     let isShuffle = false;
-
-    // Referencias DOM
-    const audio = document.getElementById('audioPlayer');
-    const btnPlay = document.getElementById('btnPlay');
-    const btnPrev = document.getElementById('btnPrev');
-    const btnNext = document.getElementById('btnNext');
-    const btnShuffle = document.getElementById('btnShuffle');
-    const volumeSlider = document.getElementById('volumeSlider');
-    const currentTrackTitle = document.getElementById('currentTrackTitle');
-    const playlistContainer = document.getElementById('playlistTracks');
-    const albumGrid = document.getElementById('albumGrid');
-    const canvas = document.getElementById('oscillatorCanvas');
-    const canvasCtx = canvas.getContext('2d');
-
-    // Contexto de Audio Web para el Oscilador
-    let audioCtx;
-    let analyser;
-    let sourceNode;
-    let isAudioCtxSetup = false;
-
-    function setupAudioContext() {
-      if (isAudioCtxSetup) return;
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 2048;
-
-      sourceNode = audioCtx.createMediaElementSource(audio);
-      sourceNode.connect(analyser);
-      analyser.connect(audioCtx.destination);
-
-      isAudioCtxSetup = true;
-      drawOscilloscope();
-    }
-
-    // Dibujado en Canvas (Osciloscopio)
-    function drawOscilloscope() {
-      requestAnimationFrame(drawOscilloscope);
-
-      const bufferLength = analyser ? analyser.frequencyBinCount : 0;
-      const dataArray = new Uint8Array(bufferLength);
-
-      if (analyser && isPlaying) {
-        analyser.getByteTimeDomainData(dataArray);
-      }
-
-      canvasCtx.fillStyle = '#000000';
-      canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-
-      canvasCtx.lineWidth = 2;
-      canvasCtx.strokeStyle = '#0099ff';
-      canvasCtx.beginPath();
-
-      if (!analyser || !isPlaying) {
-        canvasCtx.moveTo(0, canvas.height / 2);
-        canvasCtx.lineTo(canvas.width, canvas.height / 2);
-      } else {
-        const sliceWidth = canvas.width / bufferLength;
-        let x = 0;
-
-        for (let i = 0; i < bufferLength; i++) {
-          const v = dataArray[i] / 128.0;
-          const y = (v * canvas.height) / 2;
-
-          if (i === 0) {
-            canvasCtx.moveTo(x, y);
-          } else {
-            canvasCtx.lineTo(x, y);
-          }
-
-          x += sliceWidth;
-        }
-      }
-
-      canvasCtx.stroke();
-    }
-
-    // Renderizar Catálogo
-    function renderCatalog() {
-      albumGrid.innerHTML = '';
-      albumsData.forEach(album => {
-        const card = document.createElement('div');
-        card.className = 'album-card';
-        card.innerHTML = `
-          <div class="album-cover">PORTADA</div>
-          <div style="font-size:0.85rem; font-weight:600;">${album.title}</div>
-          <div style="font-size:0.75rem; color:#888;">${album.artist}</div>
-        `;
-        albumGrid.appendChild(card);
-      });
-    }
-
-    // Renderizar Playlist
-    function renderPlaylist() {
-      playlistContainer.innerHTML = '';
-      playlist.forEach((track, index) => {
-        const li = document.createElement('li');
-        li.className = `playlist-item ${index === currentTrackIndex ? 'playing' : ''}`;
-        li.innerHTML = `
-          <span>${index + 1}. ${track.title}</span>
-          <span style="font-size:0.8rem; color:#aaa;">${track.duration}</span>
-        `;
-        li.addEventListener('click', () => {
-          currentTrackIndex = index;
-          loadTrack(currentTrackIndex);
-          playAudio();
-        });
-        playlistContainer.appendChild(li);
-      });
-    }
-
-    // Cargar y Reproducir Pistas
-    function loadTrack(index) {
-      if (playlist[index]) {
-        audio.src = playlist[index].src;
-        currentTrackTitle.textContent = playlist[index].title;
-        renderPlaylist();
-      }
-    }
-
-    function playAudio() {
-      setupAudioContext();
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-      audio.play();
-      isPlaying = true;
-      btnPlay.textContent = 'Pausa';
-    }
-
-    function pauseAudio() {
-      audio.pause();
-      isPlaying = false;
-      btnPlay.textContent = 'Reproducir';
-    }
-
-    // Lógica Aleatoria y Secuencial
-    function playNextTrack() {
-      if (playlist.length === 0) return;
-
-      if (isShuffle) {
-        let randomIndex;
-        do {
-          randomIndex = Math.floor(Math.random() * playlist.length);
-        } while (randomIndex === currentTrackIndex && playlist.length > 1);
-        
-        currentTrackIndex = randomIndex;
-      } else {
-        currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-      }
-
-      loadTrack(currentTrackIndex);
-      playAudio();
-    }
-
-    function playPrevTrack() {
-      if (playlist.length === 0) return;
-      currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
-      loadTrack(currentTrackIndex);
-      playAudio();
-    }
-
-    // Eventos Controles
-    btnPlay.addEventListener('click', () => {
-      if (isPlaying) {
-        pauseAudio();
-      } else {
-        if (!audio.src) loadTrack(currentTrackIndex);
-        playAudio();
-      }
-    });
-
-    btnNext.addEventListener('click', playNextTrack);
-    btnPrev.addEventListener('click', playPrevTrack);
 
     btnShuffle.addEventListener('click', () => {
       isShuffle = !isShuffle;
       btnShuffle.classList.toggle('active', isShuffle);
     });
 
-    volumeSlider.addEventListener('input', (e) => {
-      audio.volume = e.target.value;
-    });
+    // Inicialización del oscilador en Canvas
+    const canvas = document.getElementById('oscillator');
+    const ctx = canvas.getContext('2d');
 
-    audio.addEventListener('ended', playNextTrack);
+    function drawOscillator() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+      ctx.strokeStyle = '#1db954';
+      ctx.lineWidth = 2;
 
-    // Ajuste de tamaño Canvas
-    function resizeCanvas() {
-      canvas.width = canvas.parentElement.clientWidth;
-      canvas.height = canvas.parentElement.clientHeight;
+      const height = canvas.height;
+      const width = canvas.width;
+      ctx.moveTo(0, height / 2);
+
+      for (let x = 0; x < width; x++) {
+        const y = Math.sin(x * 0.05) * 20 + (height / 2);
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
     }
 
-    window.addEventListener('resize', resizeCanvas);
-
-    // Inicialización
-    window.addEventListener('DOMContentLoaded', () => {
-      resizeCanvas();
-      renderCatalog();
-      renderPlaylist();
-      loadTrack(currentTrackIndex);
-      drawOscilloscope();
-    });
+    drawOscillator();
   </script>
 </body>
 </html>
