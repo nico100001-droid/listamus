@@ -114,15 +114,33 @@
             })
             .catch(err => console.error("Error al cargar lista.json:", err));
 
-        function renderizarAlbumes(lista) {
-            listaAlbumesUI.innerHTML = '';
-            lista.forEach((item) => {
-                let li = document.createElement('li');
-                li.innerHTML = `<span><strong>${item.artista}</strong> - ${item.album}</span>
-                                <button class="btn-accion" onclick="cargarAlbum('${item.item_id}', '${item.artista}', '${item.album}')">Cargar Álbum</button>`;
-                listaAlbumesUI.appendChild(li);
-            });
+function renderizarAlbumes(lista) {
+    listaAlbumesUI.innerHTML = '';
+    lista.forEach((item) => {
+        let li = document.createElement('li');
+        
+        if (item.item_id) {
+            // Caso 1: Álbum completo desde API de Archive.org
+            li.innerHTML = `<span><strong>${item.artista}</strong> - ${item.album} (Álbum)</span>
+                            <button class="btn-accion" onclick="cargarAlbum('${item.item_id}', '${escapeQuotes(item.artista)}', '${escapeQuotes(item.album)}')">Cargar Álbum</button>`;
+        } else if (item.url_mp3) {
+            // Caso 2: MP3 individual directo
+            li.innerHTML = `<span><strong>${item.artista}</strong> - ${item.album} (Pista individual)</span>
+                            <button class="btn-accion" onclick="cargarTemaIndividual('${escapeQuotes(item.artista)}', '${escapeQuotes(item.album)}', '${escapeQuotes(item.url_mp3)}')">Cargar Tema</button>`;
         }
+        
+        listaAlbumesUI.appendChild(li);
+    });
+}
+
+function cargarTemaIndividual(artista, album, url) {
+    pistasCargadas = [{
+        titulo: `${artista} - ${album}`,
+        url: url
+    }];
+    renderizarPistas();
+    cargarPista(0);
+}
 
         function filtrarAlbumes() {
             const texto = document.getElementById('buscador-album').value.toLowerCase();
