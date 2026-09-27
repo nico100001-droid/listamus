@@ -9,6 +9,21 @@
     "album": "El Último Ataque",
     "item_id": "rata-blanca-el-ultimo-ataque"
   },
+    {
+    "artista": "Rata Blanca",
+    "album": "El Camino del Fuego",
+    "item_id": "rata-blanca-sinfonia-fantastica_202304"
+  },
+        {
+    "artista": "Rata Blanca",
+    "album": "El reino olvidado",
+    "item_id": "rata-blanca-el-guardian-de-la-luz"
+  },
+        {
+    "artista": "Rata Blanca",
+    "album": "La llave de la puerta secreta",
+    "item_id": "rata-blanca-blues"
+  },
   {
     "artista": "Artista B",
     "album": "Sencillo MP3",
