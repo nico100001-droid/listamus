@@ -7,7 +7,7 @@
     <style>
         body { 
             font-family: 'Consolas', 'Courier New', monospace; 
-            max-width: 700px; 
+            max-width: 900px; /* Ampliado para acomodar las dos columnas */
             margin: auto; 
             padding: 15px; 
             background-color: #121212; 
@@ -22,6 +22,24 @@
             padding: 15px; 
             margin-bottom: 15px; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+        }
+
+        /* Estructura en columnas para Catálogo y Pistas */
+        .grid-columnas {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .grid-columnas .seccion {
+            margin-bottom: 0; /* Anula el margen inferior dentro del grid */
+        }
+
+        @media (max-width: 768px) {
+            .grid-columnas {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Pantalla visual estilo Winamp */
@@ -69,7 +87,7 @@
             color: #00ff66; 
             font-weight: bold;
             font-family: inherit;
-            border-radius: 2px; 
+            border-radius: 8px; /* Puntas más redondeadas */
             transition: all 0.2s ease;
         }
 
@@ -107,6 +125,11 @@
             color: #00ff66;
             font-weight: bold;
         }
+
+        .btn-activo {
+            background-color: #00ff66 !important;
+            color: #000 !important;
+        }
     </style>
 </head>
 <body>
@@ -126,20 +149,24 @@
             <button onclick="togglePlayPausa()">PLAY / PAUSE</button>
             <button onclick="saltarTiempo(10)">+10S</button>
             <button onclick="cambiarTema(1)">SIG &gt;&gt;</button>
+            <button id="btn-aleatorio" onclick="toggleAleatorio()">ALEATORIO</button>
         </div>
     </div>
 
-    <!-- Módulo Catálogo de Álbumes -->
-    <div class="seccion">
-        <h3>Catálogo de Álbumes</h3>
-        <input type="text" id="buscador-album" placeholder="Buscar artista o álbum..." onkeyup="filtrarAlbumes()">
-        <ul id="lista-albumes" class="lista"></ul>
-    </div>
+    <!-- Contenedor de dos columnas para Catálogo y Pistas -->
+    <div class="grid-columnas">
+        <!-- Módulo Catálogo de Álbumes -->
+        <div class="seccion">
+            <h3>Catálogo de Álbumes</h3>
+            <input type="text" id="buscador-album" placeholder="Buscar artista o álbum..." onkeyup="filtrarAlbumes()">
+            <ul id="lista-albumes" class="lista"></ul>
+        </div>
 
-    <!-- Módulo Pistas del Álbum Actual -->
-    <div class="seccion">
-        <h3>Pistas de la Lista Actual</h3>
-        <ul id="lista-pistas" class="lista"></ul>
+        <!-- Módulo Pistas del Álbum Actual -->
+        <div class="seccion">
+            <h3>Pistas de la Lista Actual</h3>
+            <ul id="lista-pistas" class="lista"></ul>
+        </div>
     </div>
 
     <!-- Módulo Listas Personalizadas (Memoria Local) -->
@@ -157,6 +184,7 @@
         let pistasCargadas = [];
         let indiceActual = -1;
         let listasPersonalizadas = JSON.parse(localStorage.getItem('mis_listas')) || {};
+        let aleatorioActivo = false;
 
         const reproductor = document.getElementById('reproductor');
         const infoPista = document.getElementById('info-pista');
@@ -356,8 +384,32 @@
             reproductor.currentTime += segundos;
         }
 
+        function toggleAleatorio() {
+            aleatorioActivo = !aleatorioActivo;
+            const btn = document.getElementById('btn-aleatorio');
+            if (aleatorioActivo) {
+                btn.classList.add('btn-activo');
+            } else {
+                btn.classList.remove('btn-activo');
+            }
+        }
+
         function cambiarTema(direccion) {
-            cargarPista(indiceActual + direccion);
+            if (pistasCargadas.length === 0) return;
+            
+            let nuevoIndice;
+            
+            // Si el modo aleatorio está activo y se avanza de tema
+            if (aleatorioActivo && direccion > 0) {
+                nuevoIndice = Math.floor(Math.random() * pistasCargadas.length);
+            } else {
+                nuevoIndice = indiceActual + direccion;
+            }
+
+            // Validar límites
+            if (nuevoIndice >= 0 && nuevoIndice < pistasCargadas.length) {
+                cargarPista(nuevoIndice);
+            }
         }
 
         reproductor.onended = () => cambiarTema(1);
