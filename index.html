@@ -3,102 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reproductor Web</title>
+    <title>Reproductor M3U Web</title>
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; }
-        .controles button { padding: 10px; margin: 5px; cursor: pointer; }
-        #buscador { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
-        .lista-temas { list-style: none; padding: 0; }
-        .lista-temas li { padding: 10px; border-bottom: 1px solid #ccc; cursor: pointer; }
-        .lista-temas li:hover { background-color: #f0f0f0; }
+        body { font-family: sans-serif; max-width: 700px; margin: auto; padding: 20px; }
+        .controles button { padding: 10px; margin: 3px; cursor: pointer; }
+        input[type="text"] { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
+        .seccion { border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; }
+        .lista { list-style: none; padding: 0; }
+        .lista li { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .activo { background-color: #d3e3fd; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div>
-        <h2 id="info-pista">Seleccione un tema</h2>
-        <audio id="reproductor"></audio>
+    <div class="seccion">
+        <h3 id="info-pista">Seleccione un tema</h3>
+        <audio id="reproductor" style="width: 100%; margin-bottom: 10px;"></audio>
         
         <div class="controles">
             <button onclick="cambiarTema(-1)">Anterior</button>
             <button onclick="saltarTiempo(-10)">Retroceder 10s</button>
-            <button onclick="togglePlayPausa()" id="btn-play">Play / Pausa</button>
+            <button onclick="togglePlayPausa()">Play / Pausa</button>
             <button onclick="saltarTiempo(10)">Adelantar 10s</button>
             <button onclick="cambiarTema(1)">Siguiente</button>
         </div>
     </div>
 
-    <input type="text" id="buscador" placeholder="Buscar por artista, álbum o tema..." onkeyup="filtrarLista()">
+    <div class="seccion">
+        <h3>Explorar Álbumes y Archivos</h3>
+        <input type="text" id="buscador-album" placeholder="Buscar álbum o artista..." onkeyup="filtrarAlbumes()">
+        <ul id="lista-albumes" class="lista"></ul>
+    </div>
 
-    <ul id="contenedor-lista" class="lista-temas"></ul>
+    <div class="seccion">
+        <h3>Lista de Reproducción Actual (Pistas extraídas)</h3>
+        <ul id="lista-pistas" class="lista"></ul>
+    </div>
+
+    <div class="seccion">
+        <h3>Mis Listas Guardadas (Memoria Local)</h3>
+        <input type="text" id="nombre-nueva-lista" placeholder="Nombre de la nueva lista...">
+        <button onclick="crearListaPropia()">Crear Lista</button>
+        <div id="contenedor-listas-propias"></div>
+    </div>
 
     <script>
-        let baseDatos = [];
-        let listaActual = [];
+        let baseAlbumes = [];
+        let pistasCargadas = [];
         let indiceActual = -1;
-        
+        let listasPersonalizadas = JSON.parse(localStorage.getItem('mis_listas')) || {};
+
         const reproductor = document.getElementById('reproductor');
         const infoPista = document.getElementById('info-pista');
-        const contenedorLista = document.getElementById('contenedor-lista');
+        const listaAlbumesUI = document.getElementById('lista-albumes');
+        const listaPistasUI = document.getElementById('lista-pistas');
 
-        // Carga de datos JSON
+        // Carga inicial de catálogo
         fetch('lista.json')
-            .then(respuesta => respuesta.json())
+            .then(res => res.json())
             .then(datos => {
-                baseDatos = datos;
-                listaActual = datos;
-                renderizarLista(listaActual);
+                baseAlbumes = datos;
+                renderizarAlbumes(baseAlbumes);
             });
 
-        function renderizarLista(lista) {
-            contenedorLista.innerHTML = '';
-            lista.forEach((item, index) => {
+        function renderizarAlbumes(lista) {
+            listaAlbumesUI.innerHTML = '';
+            lista.forEach((item) => {
                 let li = document.createElement('li');
-                li.textContent = `${item.artista} - ${item.album} - ${item.tema}`;
-                li.onclick = () => cargarPista(index, lista);
-                contenedorLista.appendChild(li);
+                li.innerHTML = `<span>${item.artista} - ${item.album} (${item.tipo.toUpperCase()})</span>
+                                <button onclick="cargarContenido('${item.url}', '${item.tipo}', '${item.artista}', '${item.album}')">Cargar Álbum</button>`;
+                listaAlbumesUI.appendChild(li);
             });
         }
 
-        function filtrarLista() {
-            const texto = document.getElementById('buscador').value.toLowerCase();
-            listaActual = baseDatos.filter(item => 
+        function filtrarAlbumes() {
+            const texto = document.getElementById('buscador-album').value.toLowerCase();
+            const filtrados = baseAlbumes.filter(item => 
                 item.artista.toLowerCase().includes(texto) ||
-                item.album.toLowerCase().includes(texto) ||
-                item.tema.toLowerCase().includes(texto)
+                item.album.toLowerCase().includes(texto)
             );
-            renderizarLista(listaActual);
+            renderizarAlbumes(filtrados);
         }
 
-        function cargarPista(indice, lista Referencia) {
-            if(indice >= 0 && indice < listaActual.length) {
+        // Procesamiento de recursos (M3U vs MP3)
+        async function cargarContenido(url, tipo, artista, album) {
+            pistasCargadas = [];
+            if (tipo === 'm3u') {
+                try {
+                    const respuesta = await fetch(url);
+                    const textoM3u = await respuesta.text();
+                    pistasCargadas = parsearM3U(textoM3u, artista, album);
+                } catch (e) {
+                    alert('Error al leer el archivo M3U');
+                    return;
+                }
+            } else {
+                pistasCargadas = [{
+                    titulo: `${artista} - ${album}`,
+                    url: url
+                }];
+            }
+            renderizarPistas();
+            if (pistasCargadas.length > 0) cargarPista(0);
+        }
+
+        function parsearM3U(contenido, artista, album) {
+            const lineas = contenido.split('\n');
+            const pistas = [];
+            let contador = 1;
+
+            lineas.forEach(linea => {
+                const lineaLimpia = linea.trim();
+                // Ignorar comentarios y líneas vacías del estándar M3U
+                if (lineaLimpia && !lineaLimpia.startsWith('#')) {
+                    // Extrae el nombre del archivo al final de la URL para usarlo como título
+                    const nombreArchivo = decodeURIComponent(lineaLimpia.split('/').pop());
+                    pistas.push({
+                        titulo: `${artista} - ${album} - Pista ${contador} (${nombreArchivo})`,
+                        url: lineaLimpia
+                    });
+                    contador++;
+                }
+            });
+            return pistas;
+        }
+
+        function renderizarPistas() {
+            listaPistasUI.innerHTML = '';
+            pistasCargadas.forEach((pista, idx) => {
+                let li = document.createElement('li');
+                li.innerHTML = `<span onclick="cargarPista(${idx})" style="cursor:pointer;">${pista.titulo}</span>
+                                <button onclick="agregarAPistaGuardada('${pista.titulo}', '${pista.url}')">+ Guardar</button>`;
+                if (idx === indiceActual) li.classList.add('activo');
+                listaPistasUI.appendChild(li);
+            });
+        }
+
+        function cargarPista(indice) {
+            if (indice >= 0 && indice < pistasCargadas.length) {
                 indiceActual = indice;
-                const pista = listaActual[indiceActual];
-                reproductor.src = pista.url;
-                infoPista.textContent = `${pista.artista} - ${pista.tema}`;
+                reproductor.src = pistasCargadas[indiceActual].url;
+                infoPista.textContent = pistasCargadas[indiceActual].titulo;
                 reproductor.play();
-                actualizarEstiloLista();
-            }
-        }
-
-        function actualizarEstiloLista() {
-            const items = contenedorLista.getElementsByTagName('li');
-            for(let i = 0; i < items.length; i++) {
-                items[i].classList.remove('activo');
-            }
-            if(items[indiceActual]) {
-                items[indiceActual].classList.add('activo');
+                renderizarPistas();
             }
         }
 
         // Controles de reproducción
         function togglePlayPausa() {
-            if (reproductor.paused) {
-                reproductor.play();
-            } else {
-                reproductor.pause();
-            }
+            reproductor.paused ? reproductor.play() : reproductor.pause();
         }
 
         function saltarTiempo(segundos) {
@@ -106,14 +159,61 @@
         }
 
         function cambiarTema(direccion) {
-            let nuevoIndice = indiceActual + direccion;
-            cargarPista(nuevoIndice, listaActual);
+            cargarPista(indiceActual + direccion);
         }
 
-        // Evento para avanzar al siguiente tema al finalizar la pista
-        reproductor.onended = () => {
-            cambiarTema(1);
-        };
+        reproductor.onended = () => cambiarTema(1);
+
+        // Gestión de Listas Personalizadas en LocalStorage
+        function crearListaPropia() {
+            const input = document.getElementById('nombre-nueva-lista');
+            const nombre = input.value.trim();
+            if (nombre && !listasPersonalizadas[nombre]) {
+                listasPersonalizadas[nombre] = [];
+                guardarListasEnStorage();
+                input.value = '';
+                renderizarListasPropia();
+            }
+        }
+
+        function agregarAPistaGuardada(titulo, url) {
+            const nombresListas = Object.keys(listasPersonalizadas);
+            if (nombresListas.length === 0) {
+                alert('Cree una lista personalizada primero.');
+                return;
+            }
+            const destino = prompt(`Escriba el nombre de la lista donde desea agregar la pista:\n${nombresListas.join(', ')}`);
+            if (destino && listasPersonalizadas[destino]) {
+                listasPersonalizadas[destino].push({ titulo, url });
+                guardarListasEnStorage();
+                renderizarListasPropia();
+            }
+        }
+
+        function cargarListaPersonalizada(nombreLista) {
+            pistasCargadas = listasPersonalizadas[nombreLista];
+            renderizarPistas();
+            if (pistasCargadas.length > 0) cargarPista(0);
+        }
+
+        function guardarListasEnStorage() {
+            localStorage.setItem('mis_listas', JSON.stringify(listasPersonalizadas));
+        }
+
+        function renderizarListasPropia() {
+            const contenedor = document.getElementById('contenedor-listas-propias');
+            contenedor.innerHTML = '';
+            for (let nombre in listasPersonalizadas) {
+                let div = document.createElement('div');
+                div.style.margin = "10px 0";
+                div.innerHTML = `<strong>${nombre}</strong> (${listasPersonalizadas[nombre].length} temas)
+                                 <button onclick="cargarListaPersonalizada('${nombre}')">Reproducción</button>`;
+                contenedor.appendChild(div);
+            }
+        }
+
+        // Carga inicial de listas del almacenamiento local
+        renderizarListasPropia();
     </script>
 </body>
 </html>
