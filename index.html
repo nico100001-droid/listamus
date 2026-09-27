@@ -3,47 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reproductor M3U Web</title>
+    <title>Reproductor Archive.org</title>
     <style>
-        body { font-family: sans-serif; max-width: 700px; margin: auto; padding: 20px; }
-        .controles button { padding: 10px; margin: 3px; cursor: pointer; }
-        input[type="text"] { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
-        .seccion { border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; }
-        .lista { list-style: none; padding: 0; }
-        .lista li { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 700px; 
+            margin: auto; 
+            padding: 15px; 
+            background-color: #f4f4f9; 
+            color: #333; 
+        }
+        h2, h3 { margin-top: 0; }
+        .seccion { 
+            background: #fff; 
+            border: 1px solid #ddd; 
+            border-radius: 6px; 
+            padding: 15px; 
+            margin-bottom: 15px; 
+        }
+        .controles button { 
+            padding: 10px 12px; 
+            margin: 2px; 
+            cursor: pointer; 
+            border: 1px solid #ccc; 
+            background-color: #e9e9e9; 
+            border-radius: 4px; 
+        }
+        .controles button:hover { background-color: #ddd; }
+        input[type="text"] { 
+            width: 100%; 
+            padding: 10px; 
+            margin-bottom: 10px; 
+            box-sizing: border-box; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+        }
+        .lista { list-style: none; padding: 0; margin: 0; }
+        .lista li { 
+            padding: 8px; 
+            border-bottom: 1px solid #eee; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .lista li:last-child { border-bottom: none; }
         .activo { background-color: #d3e3fd; font-weight: bold; }
+        .btn-accion { 
+            padding: 5px 10px; 
+            cursor: pointer; 
+            border: 1px solid #0056b3; 
+            background-color: #007bff; 
+            color: white; 
+            border-radius: 4px; 
+        }
+        .btn-accion:hover { background-color: #0056b3; }
     </style>
 </head>
 <body>
 
     <div class="seccion">
-        <h3 id="info-pista">Seleccione un tema</h3>
-        <audio id="reproductor" style="width: 100%; margin-bottom: 10px;"></audio>
+        <h2 id="info-pista">Seleccione un álbum o pista</h2>
+        <audio id="reproductor" style="width: 100%; margin-bottom: 10px;" controls></audio>
         
         <div class="controles">
             <button onclick="cambiarTema(-1)">Anterior</button>
-            <button onclick="saltarTiempo(-10)">Retroceder 10s</button>
-            <button onclick="togglePlayPausa()">Play / Pausa</button>
-            <button onclick="saltarTiempo(10)">Adelantar 10s</button>
+            <button onclick="saltarTiempo(-10)">-10s</button>
+            <button onclick="togglePlayPausa()" id="btn-play">Play / Pausa</button>
+            <button onclick="saltarTiempo(10)">+10s</button>
             <button onclick="cambiarTema(1)">Siguiente</button>
         </div>
     </div>
 
     <div class="seccion">
-        <h3>Explorar Álbumes y Archivos</h3>
-        <input type="text" id="buscador-album" placeholder="Buscar álbum o artista..." onkeyup="filtrarAlbumes()">
+        <h3>Catálogo de Álbumes</h3>
+        <input type="text" id="buscador-album" placeholder="Buscar artista o álbum..." onkeyup="filtrarAlbumes()">
         <ul id="lista-albumes" class="lista"></ul>
     </div>
 
     <div class="seccion">
-        <h3>Lista de Reproducción Actual (Pistas extraídas)</h3>
+        <h3>Pistas del Álbum Cargado</h3>
         <ul id="lista-pistas" class="lista"></ul>
     </div>
 
     <div class="seccion">
-        <h3>Mis Listas Guardadas (Memoria Local)</h3>
-        <input type="text" id="nombre-nueva-lista" placeholder="Nombre de la nueva lista...">
-        <button onclick="crearListaPropia()">Crear Lista</button>
+        <h3>Mis Listas Guardadas (Almacenamiento Local)</h3>
+        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+            <input type="text" id="nombre-nueva-lista" placeholder="Nombre de lista nueva..." style="margin-bottom: 0;">
+            <button class="btn-accion" onclick="crearListaPropia()">Crear</button>
+        </div>
         <div id="contenedor-listas-propias"></div>
     </div>
 
@@ -58,20 +105,21 @@
         const listaAlbumesUI = document.getElementById('lista-albumes');
         const listaPistasUI = document.getElementById('lista-pistas');
 
-        // Carga inicial de catálogo
+        // Carga inicial del JSON de catálogo
         fetch('lista.json')
             .then(res => res.json())
             .then(datos => {
                 baseAlbumes = datos;
                 renderizarAlbumes(baseAlbumes);
-            });
+            })
+            .catch(err => console.error("Error al cargar lista.json:", err));
 
         function renderizarAlbumes(lista) {
             listaAlbumesUI.innerHTML = '';
             lista.forEach((item) => {
                 let li = document.createElement('li');
-                li.innerHTML = `<span>${item.artista} - ${item.album} (${item.tipo.toUpperCase()})</span>
-                                <button onclick="cargarContenido('${item.url}', '${item.tipo}', '${item.artista}', '${item.album}')">Cargar Álbum</button>`;
+                li.innerHTML = `<span><strong>${item.artista}</strong> - ${item.album}</span>
+                                <button class="btn-accion" onclick="cargarAlbum('${item.item_id}', '${item.artista}', '${item.album}')">Cargar Álbum</button>`;
                 listaAlbumesUI.appendChild(li);
             });
         }
@@ -85,58 +133,61 @@
             renderizarAlbumes(filtrados);
         }
 
-        // Procesamiento de recursos (M3U vs MP3)
-        async function cargarContenido(url, tipo, artista, album) {
+        // Consulta directa a la API de Metadatos de Archive.org (Soporta CORS nativo)
+        async function cargarAlbum(itemId, artista, album) {
             pistasCargadas = [];
-            if (tipo === 'm3u') {
-                try {
-                    const respuesta = await fetch(url);
-                    const textoM3u = await respuesta.text();
-                    pistasCargadas = parsearM3U(textoM3u, artista, album);
-                } catch (e) {
-                    alert('Error al leer el archivo M3U');
+            infoPista.textContent = "Cargando temas desde Archive.org...";
+            const urlApi = `https://archive.org/metadata/${itemId}`;
+
+            try {
+                const respuesta = await fetch(urlApi);
+                if (!respuesta.ok) throw new Error('Error al conectar con la API');
+                
+                const datos = await respuesta.json();
+
+                // Filtrado de archivos MP3 dentro del ítem
+                const archivosAudio = datos.files.filter(f => 
+                    f.format === 'VBR MP3' || 
+                    f.format === 'MP3' || 
+                    (f.name && f.name.toLowerCase().endsWith('.mp3'))
+                );
+
+                if (archivosAudio.length === 0) {
+                    alert('No se encontraron archivos MP3 en este recurso.');
+                    infoPista.textContent = "Seleccione un álbum o pista";
                     return;
                 }
-            } else {
-                pistasCargadas = [{
-                    titulo: `${artista} - ${album}`,
-                    url: url
-                }];
+
+                // Construcción de URLs absolutas para reproducción
+                pistasCargadas = archivosAudio.map(f => ({
+                    titulo: `${artista} - ${f.title || f.name}`,
+                    url: `https://archive.org/download/${itemId}/${encodeURIComponent(f.name)}`
+                }));
+
+                renderizarPistas();
+                cargarPista(0);
+
+            } catch (e) {
+                console.error('Error al procesar metadatos:', e);
+                alert('No se pudieron obtener las pistas del álbum.');
+                infoPista.textContent = "Error al cargar álbum";
             }
-            renderizarPistas();
-            if (pistasCargadas.length > 0) cargarPista(0);
-        }
-
-        function parsearM3U(contenido, artista, album) {
-            const lineas = contenido.split('\n');
-            const pistas = [];
-            let contador = 1;
-
-            lineas.forEach(linea => {
-                const lineaLimpia = linea.trim();
-                // Ignorar comentarios y líneas vacías del estándar M3U
-                if (lineaLimpia && !lineaLimpia.startsWith('#')) {
-                    // Extrae el nombre del archivo al final de la URL para usarlo como título
-                    const nombreArchivo = decodeURIComponent(lineaLimpia.split('/').pop());
-                    pistas.push({
-                        titulo: `${artista} - ${album} - Pista ${contador} (${nombreArchivo})`,
-                        url: lineaLimpia
-                    });
-                    contador++;
-                }
-            });
-            return pistas;
         }
 
         function renderizarPistas() {
             listaPistasUI.innerHTML = '';
             pistasCargadas.forEach((pista, idx) => {
                 let li = document.createElement('li');
-                li.innerHTML = `<span onclick="cargarPista(${idx})" style="cursor:pointer;">${pista.titulo}</span>
-                                <button onclick="agregarAPistaGuardada('${pista.titulo}', '${pista.url}')">+ Guardar</button>`;
                 if (idx === indiceActual) li.classList.add('activo');
+                
+                li.innerHTML = `<span onclick="cargarPista(${idx})" style="cursor:pointer; flex-grow: 1;">${pista.titulo}</span>
+                                <button onclick="agregarAPistaGuardada('${escapeQuotes(pista.titulo)}', '${escapeQuotes(pista.url)}')">+ Guardar</button>`;
                 listaPistasUI.appendChild(li);
             });
+        }
+
+        function escapeQuotes(cadena) {
+            return cadena.replace(/'/g, "\\'");
         }
 
         function cargarPista(indice) {
@@ -149,7 +200,7 @@
             }
         }
 
-        // Controles de reproducción
+        // Controles de audio
         function togglePlayPausa() {
             reproductor.paused ? reproductor.play() : reproductor.pause();
         }
@@ -164,7 +215,7 @@
 
         reproductor.onended = () => cambiarTema(1);
 
-        // Gestión de Listas Personalizadas en LocalStorage
+        // Gestión de Listas Personalizadas (localStorage)
         function crearListaPropia() {
             const input = document.getElementById('nombre-nueva-lista');
             const nombre = input.value.trim();
@@ -179,14 +230,16 @@
         function agregarAPistaGuardada(titulo, url) {
             const nombresListas = Object.keys(listasPersonalizadas);
             if (nombresListas.length === 0) {
-                alert('Cree una lista personalizada primero.');
+                alert('Cree una lista personalizada en el módulo inferior primero.');
                 return;
             }
-            const destino = prompt(`Escriba el nombre de la lista donde desea agregar la pista:\n${nombresListas.join(', ')}`);
+            const destino = prompt(`Escriba el nombre de la lista de destino:\n${nombresListas.join('\n')}`);
             if (destino && listasPersonalizadas[destino]) {
                 listasPersonalizadas[destino].push({ titulo, url });
                 guardarListasEnStorage();
                 renderizarListasPropia();
+            } else if (destino) {
+                alert('La lista especificada no existe.');
             }
         }
 
@@ -205,14 +258,14 @@
             contenedor.innerHTML = '';
             for (let nombre in listasPersonalizadas) {
                 let div = document.createElement('div');
-                div.style.margin = "10px 0";
+                div.style.margin = "8px 0";
                 div.innerHTML = `<strong>${nombre}</strong> (${listasPersonalizadas[nombre].length} temas)
-                                 <button onclick="cargarListaPersonalizada('${nombre}')">Reproducción</button>`;
+                                 <button class="btn-accion" onclick="cargarListaPersonalizada('${nombre}')">Reproducir Lista</button>`;
                 contenedor.appendChild(div);
             }
         }
 
-        // Carga inicial de listas del almacenamiento local
+        // Inicialización de listas locales guardadas
         renderizarListasPropia();
     </script>
 </body>
