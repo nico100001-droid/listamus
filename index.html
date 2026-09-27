@@ -1,1 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reproductor Web</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; }
+        .controles button { padding: 10px; margin: 5px; cursor: pointer; }
+        #buscador { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
+        .lista-temas { list-style: none; padding: 0; }
+        .lista-temas li { padding: 10px; border-bottom: 1px solid #ccc; cursor: pointer; }
+        .lista-temas li:hover { background-color: #f0f0f0; }
+        .activo { background-color: #d3e3fd; font-weight: bold; }
+    </style>
+</head>
+<body>
 
+    <div>
+        <h2 id="info-pista">Seleccione un tema</h2>
+        <audio id="reproductor"></audio>
+        
+        <div class="controles">
+            <button onclick="cambiarTema(-1)">Anterior</button>
+            <button onclick="saltarTiempo(-10)">Retroceder 10s</button>
+            <button onclick="togglePlayPausa()" id="btn-play">Play / Pausa</button>
+            <button onclick="saltarTiempo(10)">Adelantar 10s</button>
+            <button onclick="cambiarTema(1)">Siguiente</button>
+        </div>
+    </div>
+
+    <input type="text" id="buscador" placeholder="Buscar por artista, álbum o tema..." onkeyup="filtrarLista()">
+
+    <ul id="contenedor-lista" class="lista-temas"></ul>
+
+    <script>
+        let baseDatos = [];
+        let listaActual = [];
+        let indiceActual = -1;
+        
+        const reproductor = document.getElementById('reproductor');
+        const infoPista = document.getElementById('info-pista');
+        const contenedorLista = document.getElementById('contenedor-lista');
+
+        // Carga de datos JSON
+        fetch('lista.json')
+            .then(respuesta => respuesta.json())
+            .then(datos => {
+                baseDatos = datos;
+                listaActual = datos;
+                renderizarLista(listaActual);
+            });
+
+        function renderizarLista(lista) {
+            contenedorLista.innerHTML = '';
+            lista.forEach((item, index) => {
+                let li = document.createElement('li');
+                li.textContent = `${item.artista} - ${item.album} - ${item.tema}`;
+                li.onclick = () => cargarPista(index, lista);
+                contenedorLista.appendChild(li);
+            });
+        }
+
+        function filtrarLista() {
+            const texto = document.getElementById('buscador').value.toLowerCase();
+            listaActual = baseDatos.filter(item => 
+                item.artista.toLowerCase().includes(texto) ||
+                item.album.toLowerCase().includes(texto) ||
+                item.tema.toLowerCase().includes(texto)
+            );
+            renderizarLista(listaActual);
+        }
+
+        function cargarPista(indice, lista Referencia) {
+            if(indice >= 0 && indice < listaActual.length) {
+                indiceActual = indice;
+                const pista = listaActual[indiceActual];
+                reproductor.src = pista.url;
+                infoPista.textContent = `${pista.artista} - ${pista.tema}`;
+                reproductor.play();
+                actualizarEstiloLista();
+            }
+        }
+
+        function actualizarEstiloLista() {
+            const items = contenedorLista.getElementsByTagName('li');
+            for(let i = 0; i < items.length; i++) {
+                items[i].classList.remove('activo');
+            }
+            if(items[indiceActual]) {
+                items[indiceActual].classList.add('activo');
+            }
+        }
+
+        // Controles de reproducción
+        function togglePlayPausa() {
+            if (reproductor.paused) {
+                reproductor.play();
+            } else {
+                reproductor.pause();
+            }
+        }
+
+        function saltarTiempo(segundos) {
+            reproductor.currentTime += segundos;
+        }
+
+        function cambiarTema(direccion) {
+            let nuevoIndice = indiceActual + direccion;
+            cargarPista(nuevoIndice, listaActual);
+        }
+
+        // Evento para avanzar al siguiente tema al finalizar la pista
+        reproductor.onended = () => {
+            cambiarTema(1);
+        };
+    </script>
+</body>
+</html>
