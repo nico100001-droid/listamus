@@ -1,16 +1,16 @@
 [
   {
     "id": 1,
-    "artista": "Rata Blanca",
+    "artista": "Rata blanca",
     "album": "El camino del fuego",
-    "tema": "Tema Uno",
+    "tipo": "m3u",
     "url": "https://ia800801.us.archive.org/16/items/rata-blanca-sinfonia-fantastica_202304/rata-blanca-sinfonia-fantastica_202304_vbr.m3u"
   },
   {
     "id": 2,
-    "artista": "Artista Ejemplo B",
-    "album": "Album 2",
-    "tema": "Tema Dos",
-    "url": "https://archive.org/download/identificador_del_item/archivo_2.mp3"
+    "artista": "Artista B",
+    "album": "Sencillo MP3",
+    "tipo": "mp3",
+    "url": "https://archive.org/download/identificador_del_item/cancion.mp3"
   }
 ]
