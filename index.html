@@ -3,90 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reproductor Archive.org</title>
+    <title>Winamp Web Player</title>
     <style>
         body { 
-            font-family: Arial, sans-serif; 
+            font-family: 'Consolas', 'Courier New', monospace; 
             max-width: 700px; 
             margin: auto; 
             padding: 15px; 
-            background-color: #f4f4f9; 
-            color: #333; 
+            background-color: #121212; 
+            color: #e0e0e0; 
         }
-        h2, h3 { margin-top: 0; }
+        h2, h3 { margin-top: 0; color: #00ff66; text-transform: uppercase; }
+        
         .seccion { 
-            background: #fff; 
-            border: 1px solid #ddd; 
-            border-radius: 6px; 
+            background: #1e1e1e; 
+            border: 1px solid #333; 
+            border-radius: 4px; 
             padding: 15px; 
             margin-bottom: 15px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.7);
         }
-        .controles button { 
-            padding: 10px 12px; 
-            margin: 2px; 
+
+        /* Pantalla visual estilo Winamp */
+        .pantalla-winamp {
+            background-color: #000;
+            border: 1px solid #00ff66;
+            padding: 10px;
+            border-radius: 3px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        #info-pista {
+            color: #00ff66;
+            font-size: 14px;
+            margin: 0 0 8px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Canvas del Osciloscopio */
+        #visualizador {
+            width: 100%;
+            height: 80px;
+            background-color: #050505;
+            border: 1px solid #222;
+            display: block;
+        }
+
+        /* Controles estilo ciberpunk/retro */
+        .controles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .controles button, .btn-accion { 
+            padding: 8px 12px; 
             cursor: pointer; 
-            border: 1px solid #ccc; 
-            background-color: #e9e9e9; 
-            border-radius: 4px; 
+            border: 1px solid #00ff66; 
+            background-color: #111; 
+            color: #00ff66; 
+            font-weight: bold;
+            font-family: inherit;
+            border-radius: 2px; 
+            transition: all 0.2s ease;
         }
-        .controles button:hover { background-color: #ddd; }
+
+        .controles button:hover, .btn-accion:hover { 
+            background-color: #00ff66; 
+            color: #000;
+        }
+
         input[type="text"] { 
             width: 100%; 
             padding: 10px; 
             margin-bottom: 10px; 
             box-sizing: border-box; 
-            border: 1px solid #ccc; 
-            border-radius: 4px; 
+            border: 1px solid #444; 
+            background-color: #2a2a2a;
+            color: #fff;
+            font-family: inherit;
+            border-radius: 3px; 
         }
+
+        /* Listas de reproducción */
         .lista { list-style: none; padding: 0; margin: 0; }
         .lista li { 
             padding: 8px; 
-            border-bottom: 1px solid #eee; 
+            border-bottom: 1px solid #2a2a2a; 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
+            font-size: 13px;
         }
-        .lista li:last-child { border-bottom: none; }
-        .activo { background-color: #d3e3fd; font-weight: bold; }
-        .btn-accion { 
-            padding: 5px 10px; 
-            cursor: pointer; 
-            border: 1px solid #0056b3; 
-            background-color: #007bff; 
-            color: white; 
-            border-radius: 4px; 
+
+        .activo { 
+            background-color: #1b3a20; 
+            border-left: 4px solid #00ff66; 
+            color: #00ff66;
+            font-weight: bold;
         }
-        .btn-accion:hover { background-color: #0056b3; }
     </style>
 </head>
 <body>
 
+    <!-- Módulo Reproductor Principal -->
     <div class="seccion">
-        <h2 id="info-pista">Seleccione un álbum o pista</h2>
-        <audio id="reproductor" style="width: 100%; margin-bottom: 10px;" controls></audio>
+        <div class="pantalla-winamp">
+            <h2 id="info-pista">WINAMP // SELECCIONAR PISTA</h2>
+            <canvas id="visualizador" width="600" height="80"></canvas>
+        </div>
+        
+        <audio id="reproductor" crossorigin="anonymous" style="width: 100%; margin-bottom: 10px;" controls></audio>
         
         <div class="controles">
-            <button onclick="cambiarTema(-1)">Anterior</button>
-            <button onclick="saltarTiempo(-10)">-10s</button>
-            <button onclick="togglePlayPausa()" id="btn-play">Play / Pausa</button>
-            <button onclick="saltarTiempo(10)">+10s</button>
-            <button onclick="cambiarTema(1)">Siguiente</button>
+            <button onclick="cambiarTema(-1)">&lt;&lt; ANT</button>
+            <button onclick="saltarTiempo(-10)">-10S</button>
+            <button onclick="togglePlayPausa()">PLAY / PAUSE</button>
+            <button onclick="saltarTiempo(10)">+10S</button>
+            <button onclick="cambiarTema(1)">SIG &gt;&gt;</button>
         </div>
     </div>
 
+    <!-- Módulo Catálogo de Álbumes -->
     <div class="seccion">
         <h3>Catálogo de Álbumes</h3>
         <input type="text" id="buscador-album" placeholder="Buscar artista o álbum..." onkeyup="filtrarAlbumes()">
         <ul id="lista-albumes" class="lista"></ul>
     </div>
 
+    <!-- Módulo Pistas del Álbum Actual -->
     <div class="seccion">
-        <h3>Pistas del Álbum Cargado</h3>
+        <h3>Pistas de la Lista Actual</h3>
         <ul id="lista-pistas" class="lista"></ul>
     </div>
 
+    <!-- Módulo Listas Personalizadas (Memoria Local) -->
     <div class="seccion">
-        <h3>Mis Listas Guardadas (Almacenamiento Local)</h3>
+        <h3>Listas Guardadas (Memoria Local)</h3>
         <div style="display: flex; gap: 5px; margin-bottom: 10px;">
             <input type="text" id="nombre-nueva-lista" placeholder="Nombre de lista nueva..." style="margin-bottom: 0;">
             <button class="btn-accion" onclick="crearListaPropia()">Crear</button>
@@ -105,7 +163,68 @@
         const listaAlbumesUI = document.getElementById('lista-albumes');
         const listaPistasUI = document.getElementById('lista-pistas');
 
-        // Carga inicial del JSON de catálogo
+        // --- MOTOR DEL VISUALIZADOR DE ONDA (WEB AUDIO API) ---
+        let audioCtx;
+        let analizador;
+        let fuenteNodo;
+        let visualizadorInicializado = false;
+
+        const canvas = document.getElementById('visualizador');
+        const canvasCtx = canvas.getContext('2d');
+
+        function inicializarVisualizador() {
+            if (visualizadorInicializado) return;
+            
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analizador = audioCtx.createAnalyser();
+                analizador.fftSize = 2048;
+                
+                fuenteNodo = audioCtx.createMediaElementSource(reproductor);
+                fuenteNodo.connect(analizador);
+                analizador.connect(audioCtx.destination);
+                
+                visualizadorInicializado = true;
+                dibujarOsciloscopio();
+            } catch (e) {
+                console.error("Error al inicializar AudioContext:", e);
+            }
+        }
+
+        function dibujarOsciloscopio() {
+            requestAnimationFrame(dibujarOsciloscopio);
+
+            const bufferLongitud = analizador.frequencyBinCount;
+            const datosTiempo = new Uint8Array(bufferLongitud);
+            analizador.getByteTimeDomainData(datosTiempo);
+
+            canvasCtx.fillStyle = '#050505';
+            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+            canvasCtx.lineWidth = 2;
+            canvasCtx.strokeStyle = '#00ff66';
+            canvasCtx.beginPath();
+
+            const anchoAncho = (canvas.width * 1.0) / bufferLongitud;
+            let x = 0;
+
+            for (let i = 0; i < bufferLongitud; i++) {
+                const v = datosTiempo[i] / 128.0;
+                const y = (v * canvas.height) / 2;
+
+                if (i === 0) {
+                    canvasCtx.moveTo(x, y);
+                } else {
+                    canvasCtx.lineTo(x, y);
+                }
+                x += anchoAncho;
+            }
+
+            canvasCtx.lineTo(canvas.width, canvas.height / 2);
+            canvasCtx.stroke();
+        }
+
+        // --- CARGA DE DATOS Y CATALOGO ---
         fetch('lista.json')
             .then(res => res.json())
             .then(datos => {
@@ -114,33 +233,21 @@
             })
             .catch(err => console.error("Error al cargar lista.json:", err));
 
-function renderizarAlbumes(lista) {
-    listaAlbumesUI.innerHTML = '';
-    lista.forEach((item) => {
-        let li = document.createElement('li');
-        
-        if (item.item_id) {
-            // Caso 1: Álbum completo desde API de Archive.org
-            li.innerHTML = `<span><strong>${item.artista}</strong> - ${item.album} (Álbum)</span>
-                            <button class="btn-accion" onclick="cargarAlbum('${item.item_id}', '${escapeQuotes(item.artista)}', '${escapeQuotes(item.album)}')">Cargar Álbum</button>`;
-        } else if (item.url_mp3) {
-            // Caso 2: MP3 individual directo
-            li.innerHTML = `<span><strong>${item.artista}</strong> - ${item.album} (Pista individual)</span>
-                            <button class="btn-accion" onclick="cargarTemaIndividual('${escapeQuotes(item.artista)}', '${escapeQuotes(item.album)}', '${escapeQuotes(item.url_mp3)}')">Cargar Tema</button>`;
+        function renderizarAlbumes(lista) {
+            listaAlbumesUI.innerHTML = '';
+            lista.forEach((item) => {
+                let li = document.createElement('li');
+                
+                if (item.item_id) {
+                    li.innerHTML = `<span><strong>${item.artista}</strong> - ${item.album} (Álbum)</span>
+                                    <button class="btn-accion" onclick="cargarAlbum('${item.item_id}', '${escapeQuotes(item.artista)}', '${escapeQuotes(item.album)}')">Cargar Álbum</button>`;
+                } else if (item.url_mp3) {
+                    li.innerHTML = `<span><strong>${item.artista}</strong> - ${item.album} (Pista)</span>
+                                    <button class="btn-accion" onclick="cargarTemaIndividual('${escapeQuotes(item.artista)}', '${escapeQuotes(item.album)}', '${escapeQuotes(item.url_mp3)}')">Cargar Tema</button>`;
+                }
+                listaAlbumesUI.appendChild(li);
+            });
         }
-        
-        listaAlbumesUI.appendChild(li);
-    });
-}
-
-function cargarTemaIndividual(artista, album, url) {
-    pistasCargadas = [{
-        titulo: `${artista} - ${album}`,
-        url: url
-    }];
-    renderizarPistas();
-    cargarPista(0);
-}
 
         function filtrarAlbumes() {
             const texto = document.getElementById('buscador-album').value.toLowerCase();
@@ -151,10 +258,9 @@ function cargarTemaIndividual(artista, album, url) {
             renderizarAlbumes(filtrados);
         }
 
-        // Consulta directa a la API de Metadatos de Archive.org (Soporta CORS nativo)
         async function cargarAlbum(itemId, artista, album) {
             pistasCargadas = [];
-            infoPista.textContent = "Cargando temas desde Archive.org...";
+            infoPista.textContent = "CARGANDO DESDE ARCHIVE.ORG...";
             const urlApi = `https://archive.org/metadata/${itemId}`;
 
             try {
@@ -163,7 +269,6 @@ function cargarTemaIndividual(artista, album, url) {
                 
                 const datos = await respuesta.json();
 
-                // Filtrado de archivos MP3 dentro del ítem
                 const archivosAudio = datos.files.filter(f => 
                     f.format === 'VBR MP3' || 
                     f.format === 'MP3' || 
@@ -172,11 +277,10 @@ function cargarTemaIndividual(artista, album, url) {
 
                 if (archivosAudio.length === 0) {
                     alert('No se encontraron archivos MP3 en este recurso.');
-                    infoPista.textContent = "Seleccione un álbum o pista";
+                    infoPista.textContent = "SELECCIONAR PISTA";
                     return;
                 }
 
-                // Construcción de URLs absolutas para reproducción
                 pistasCargadas = archivosAudio.map(f => ({
                     titulo: `${artista} - ${f.title || f.name}`,
                     url: `https://archive.org/download/${itemId}/${encodeURIComponent(f.name)}`
@@ -188,8 +292,17 @@ function cargarTemaIndividual(artista, album, url) {
             } catch (e) {
                 console.error('Error al procesar metadatos:', e);
                 alert('No se pudieron obtener las pistas del álbum.');
-                infoPista.textContent = "Error al cargar álbum";
+                infoPista.textContent = "ERROR AL CARGAR";
             }
+        }
+
+        function cargarTemaIndividual(artista, album, url) {
+            pistasCargadas = [{
+                titulo: `${artista} - ${album}`,
+                url: url
+            }];
+            renderizarPistas();
+            cargarPista(0);
         }
 
         function renderizarPistas() {
@@ -199,13 +312,13 @@ function cargarTemaIndividual(artista, album, url) {
                 if (idx === indiceActual) li.classList.add('activo');
                 
                 li.innerHTML = `<span onclick="cargarPista(${idx})" style="cursor:pointer; flex-grow: 1;">${pista.titulo}</span>
-                                <button onclick="agregarAPistaGuardada('${escapeQuotes(pista.titulo)}', '${escapeQuotes(pista.url)}')">+ Guardar</button>`;
+                                <button class="btn-accion" onclick="agregarAPistaGuardada('${escapeQuotes(pista.titulo)}', '${escapeQuotes(pista.url)}')">+ GUARDAR</button>`;
                 listaPistasUI.appendChild(li);
             });
         }
 
         function escapeQuotes(cadena) {
-            return cadena.replace(/'/g, "\\'");
+            return cadena ? cadena.replace(/'/g, "\\'") : '';
         }
 
         function cargarPista(indice) {
@@ -213,14 +326,30 @@ function cargarTemaIndividual(artista, album, url) {
                 indiceActual = indice;
                 reproductor.src = pistasCargadas[indiceActual].url;
                 infoPista.textContent = pistasCargadas[indiceActual].titulo;
+                
+                // Activar audio context para el osciloscopio
+                inicializarVisualizador();
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
                 reproductor.play();
                 renderizarPistas();
             }
         }
 
-        // Controles de audio
+        // --- CONTROLES DE REPRODUCCIÓN ---
         function togglePlayPausa() {
-            reproductor.paused ? reproductor.play() : reproductor.pause();
+            inicializarVisualizador();
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            if (reproductor.paused) {
+                reproductor.play();
+            } else {
+                reproductor.pause();
+            }
         }
 
         function saltarTiempo(segundos) {
@@ -233,7 +362,7 @@ function cargarTemaIndividual(artista, album, url) {
 
         reproductor.onended = () => cambiarTema(1);
 
-        // Gestión de Listas Personalizadas (localStorage)
+        // --- MEMORIA LOCAL (LOCALSTORAGE) ---
         function crearListaPropia() {
             const input = document.getElementById('nombre-nueva-lista');
             const nombre = input.value.trim();
@@ -277,13 +406,16 @@ function cargarTemaIndividual(artista, album, url) {
             for (let nombre in listasPersonalizadas) {
                 let div = document.createElement('div');
                 div.style.margin = "8px 0";
-                div.innerHTML = `<strong>${nombre}</strong> (${listasPersonalizadas[nombre].length} temas)
-                                 <button class="btn-accion" onclick="cargarListaPersonalizada('${nombre}')">Reproducir Lista</button>`;
+                div.style.display = "flex";
+                div.style.justifyContent = "space-between";
+                div.style.alignItems = "center";
+                div.innerHTML = `<span><strong>${nombre}</strong> (${listasPersonalizadas[nombre].length} temas)</span>
+                                 <button class="btn-accion" onclick="cargarListaPersonalizada('${nombre}')">REPRODUCIR</button>`;
                 contenedor.appendChild(div);
             }
         }
 
-        // Inicialización de listas locales guardadas
+        // Carga inicial
         renderizarListasPropia();
     </script>
 </body>
