@@ -1,422 +1,485 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Winamp Web Player</title>
-    <style>
-        body { 
-            font-family: 'Consolas', 'Courier New', monospace; 
-            max-width: 700px; 
-            margin: auto; 
-            padding: 15px; 
-            background-color: #121212; 
-            color: #e0e0e0; 
-        }
-        h2, h3 { margin-top: 0; color: #00ff66; text-transform: uppercase; }
-        
-        .seccion { 
-            background: #1e1e1e; 
-            border: 1px solid #333; 
-            border-radius: 4px; 
-            padding: 15px; 
-            margin-bottom: 15px; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.7);
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reproductor de Audio</title>
+  <style>
+    :root {
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --border-color: #333333;
+      --text-color: #e0e0e0;
+      --accent-color: #007acc;
+      --accent-hover: #0099ff;
+      --border-radius: 8px;
+    }
 
-        /* Pantalla visual estilo Winamp */
-        .pantalla-winamp {
-            background-color: #000;
-            border: 1px solid #00ff66;
-            padding: 10px;
-            border-radius: 3px;
-            margin-bottom: 10px;
-            text-align: center;
-        }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
 
-        #info-pista {
-            color: #00ff66;
-            font-size: 14px;
-            margin: 0 0 8px 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 20px;
+    }
 
-        /* Canvas del Osciloscopio */
-        #visualizador {
-            width: 100%;
-            height: 80px;
-            background-color: #050505;
-            border: 1px solid #222;
-            display: block;
-        }
+    /* Estructura Principal */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
 
-        /* Controles estilo ciberpunk/retro */
-        .controles {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            justify-content: center;
-            margin-top: 10px;
-        }
+    /* BLOQUE SUPERIOR: REPRODUCTOR Y OSCILADOR */
+    .player-section {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
 
-        .controles button, .btn-accion { 
-            padding: 8px 12px; 
-            cursor: pointer; 
-            border: 1px solid #00ff66; 
-            background-color: #111; 
-            color: #00ff66; 
-            font-weight: bold;
-            font-family: inherit;
-            border-radius: 2px; 
-            transition: all 0.2s ease;
-        }
+    .track-info {
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-align: center;
+    }
 
-        .controles button:hover, .btn-accion:hover { 
-            background-color: #00ff66; 
-            color: #000;
-        }
+    .canvas-container {
+      width: 100%;
+      height: 120px;
+      background-color: #000;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+    }
 
-        input[type="text"] { 
-            width: 100%; 
-            padding: 10px; 
-            margin-bottom: 10px; 
-            box-sizing: border-box; 
-            border: 1px solid #444; 
-            background-color: #2a2a2a;
-            color: #fff;
-            font-family: inherit;
-            border-radius: 3px; 
-        }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
 
-        /* Listas de reproducción */
-        .lista { list-style: none; padding: 0; margin: 0; }
-        .lista li { 
-            padding: 8px; 
-            border-bottom: 1px solid #2a2a2a; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            font-size: 13px;
-        }
+    .player-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
 
-        .activo { 
-            background-color: #1b3a20; 
-            border-left: 4px solid #00ff66; 
-            color: #00ff66;
-            font-weight: bold;
-        }
-    </style>
+    /* Estilo de Botones */
+    .btn {
+      border-radius: var(--border-radius);
+      border: 1px solid var(--border-color);
+      padding: 10px 18px;
+      background-color: #2a2a2a;
+      color: var(--text-color);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .btn:hover {
+      background-color: #383838;
+      border-color: #555;
+    }
+
+    .btn.active {
+      background-color: var(--accent-color);
+      border-color: var(--accent-hover);
+      color: #fff;
+    }
+
+    .volume-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 10px;
+    }
+
+    input[type="range"] {
+      accent-color: var(--accent-color);
+      cursor: pointer;
+    }
+
+    /* BLOQUE INFERIOR: PARALELO (CATÁLOGO Y PLAYLIST) */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .panel h2 {
+      font-size: 1.2rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    /* Catálogo de Álbumes */
+    .album-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 12px;
+    }
+
+    .album-card {
+      background-color: #282828;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s ease, background-color 0.2s ease;
+    }
+
+    .album-card:hover {
+      background-color: #333;
+      transform: translateY(-2px);
+    }
+
+    .album-cover {
+      width: 100%;
+      aspect-ratio: 1;
+      background-color: #444;
+      border-radius: calc(var(--border-radius) - 2px);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: #aaa;
+    }
+
+    /* Lista de Reproducción */
+    .playlist {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 350px;
+      overflow-y: auto;
+    }
+
+    .playlist-item {
+      padding: 10px 12px;
+      background-color: #252525;
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .playlist-item:hover {
+      background-color: #303030;
+    }
+
+    .playlist-item.playing {
+      border-color: var(--accent-color);
+      background-color: #1a2a3a;
+    }
+  </style>
 </head>
 <body>
 
-    <!-- Módulo Reproductor Principal -->
-    <div class="seccion">
-        <div class="pantalla-winamp">
-            <h2 id="info-pista">WINAMP // SELECCIONAR PISTA</h2>
-            <canvas id="visualizador" width="600" height="80"></canvas>
-        </div>
+  <div class="app-container">
+    
+    <!-- BLOQUE SUPERIOR: REPRODUCTOR CON OSCILADOR -->
+    <section class="player-section">
+      <div class="track-info" id="currentTrackTitle">Selecciona una pista</div>
+      
+      <div class="canvas-container">
+        <canvas id="oscillatorCanvas"></canvas>
+      </div>
+      
+      <div class="player-controls">
+        <button id="btnPrev" class="btn">Anterior</button>
+        <button id="btnPlay" class="btn">Reproducir</button>
+        <button id="btnNext" class="btn">Siguiente</button>
+        <button id="btnShuffle" class="btn">Aleatorio</button>
         
-        <audio id="reproductor" crossorigin="anonymous" style="width: 100%; margin-bottom: 10px;" controls></audio>
+        <div class="volume-control">
+          <label for="volumeSlider">Vol.</label>
+          <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.8">
+        </div>
+      </div>
+    </section>
+
+    <!-- BLOQUE INFERIOR: CATÁLOGO Y PLAYLIST EN PARALELO -->
+    <div class="content-grid">
+      
+      <!-- Catálogo de Álbumes -->
+      <section class="panel">
+        <h2>Catálogo de Álbumes</h2>
+        <div class="album-grid" id="albumGrid">
+          <!-- Renderizado dinámico -->
+        </div>
+      </section>
+
+      <!-- Lista de Reproducción -->
+      <section class="panel">
+        <h2>Lista de Reproducción</h2>
+        <ul class="playlist" id="playlistTracks">
+          <!-- Renderizado dinámico -->
+        </ul>
+      </section>
+
+    </div>
+
+  </div>
+
+  <audio id="audioPlayer" crossOrigin="anonymous"></audio>
+
+  <script>
+    // Datos de ejemplo
+    const albumsData = [
+      { id: 1, title: 'Álbum Sintetizador', artist: 'Artista A' },
+      { id: 2, title: 'Frecuencia Cero', artist: 'Artista B' },
+      { id: 3, title: 'Ondas Analógicas', artist: 'Artista C' },
+      { id: 4, title: 'Modular Session', artist: 'Artista D' }
+    ];
+
+    const initialPlaylist = [
+      { title: 'Tono Senoidal 440Hz', src: 'https://actions.google.com/sounds/v1/alarms/beep_short.ogg', duration: '0:03' },
+      { title: 'Secuencia Digital', src: 'https://actions.google.com/sounds/v1/ambiences/rain_heavy.ogg', duration: '0:30' },
+      { title: 'Pulso Eléctrico', src: 'https://actions.google.com/sounds/v1/science_fiction/scifi_laser.ogg', duration: '0:02' },
+      { title: 'Ambiente Estático', src: 'https://actions.google.com/sounds/v1/weather/wind_synthetic.ogg', duration: '0:15' }
+    ];
+
+    // Variables de Estado
+    let playlist = [...initialPlaylist];
+    let currentTrackIndex = 0;
+    let isPlaying = false;
+    let isShuffle = false;
+
+    // Referencias DOM
+    const audio = document.getElementById('audioPlayer');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const btnShuffle = document.getElementById('btnShuffle');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const currentTrackTitle = document.getElementById('currentTrackTitle');
+    const playlistContainer = document.getElementById('playlistTracks');
+    const albumGrid = document.getElementById('albumGrid');
+    const canvas = document.getElementById('oscillatorCanvas');
+    const canvasCtx = canvas.getContext('2d');
+
+    // Contexto de Audio Web para el Oscilador
+    let audioCtx;
+    let analyser;
+    let sourceNode;
+    let isAudioCtxSetup = false;
+
+    function setupAudioContext() {
+      if (isAudioCtxSetup) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+
+      sourceNode = audioCtx.createMediaElementSource(audio);
+      sourceNode.connect(analyser);
+      analyser.connect(audioCtx.destination);
+
+      isAudioCtxSetup = true;
+      drawOscilloscope();
+    }
+
+    // Dibujado en Canvas (Osciloscopio)
+    function drawOscilloscope() {
+      requestAnimationFrame(drawOscilloscope);
+
+      const bufferLength = analyser ? analyser.frequencyBinCount : 0;
+      const dataArray = new Uint8Array(bufferLength);
+
+      if (analyser && isPlaying) {
+        analyser.getByteTimeDomainData(dataArray);
+      }
+
+      canvasCtx.fillStyle = '#000000';
+      canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+      canvasCtx.lineWidth = 2;
+      canvasCtx.strokeStyle = '#0099ff';
+      canvasCtx.beginPath();
+
+      if (!analyser || !isPlaying) {
+        canvasCtx.moveTo(0, canvas.height / 2);
+        canvasCtx.lineTo(canvas.width, canvas.height / 2);
+      } else {
+        const sliceWidth = canvas.width / bufferLength;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const v = dataArray[i] / 128.0;
+          const y = (v * canvas.height) / 2;
+
+          if (i === 0) {
+            canvasCtx.moveTo(x, y);
+          } else {
+            canvasCtx.lineTo(x, y);
+          }
+
+          x += sliceWidth;
+        }
+      }
+
+      canvasCtx.stroke();
+    }
+
+    // Renderizar Catálogo
+    function renderCatalog() {
+      albumGrid.innerHTML = '';
+      albumsData.forEach(album => {
+        const card = document.createElement('div');
+        card.className = 'album-card';
+        card.innerHTML = `
+          <div class="album-cover">PORTADA</div>
+          <div style="font-size:0.85rem; font-weight:600;">${album.title}</div>
+          <div style="font-size:0.75rem; color:#888;">${album.artist}</div>
+        `;
+        albumGrid.appendChild(card);
+      });
+    }
+
+    // Renderizar Playlist
+    function renderPlaylist() {
+      playlistContainer.innerHTML = '';
+      playlist.forEach((track, index) => {
+        const li = document.createElement('li');
+        li.className = `playlist-item ${index === currentTrackIndex ? 'playing' : ''}`;
+        li.innerHTML = `
+          <span>${index + 1}. ${track.title}</span>
+          <span style="font-size:0.8rem; color:#aaa;">${track.duration}</span>
+        `;
+        li.addEventListener('click', () => {
+          currentTrackIndex = index;
+          loadTrack(currentTrackIndex);
+          playAudio();
+        });
+        playlistContainer.appendChild(li);
+      });
+    }
+
+    // Cargar y Reproducir Pistas
+    function loadTrack(index) {
+      if (playlist[index]) {
+        audio.src = playlist[index].src;
+        currentTrackTitle.textContent = playlist[index].title;
+        renderPlaylist();
+      }
+    }
+
+    function playAudio() {
+      setupAudioContext();
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      audio.play();
+      isPlaying = true;
+      btnPlay.textContent = 'Pausa';
+    }
+
+    function pauseAudio() {
+      audio.pause();
+      isPlaying = false;
+      btnPlay.textContent = 'Reproducir';
+    }
+
+    // Lógica Aleatoria y Secuencial
+    function playNextTrack() {
+      if (playlist.length === 0) return;
+
+      if (isShuffle) {
+        let randomIndex;
+        do {
+          randomIndex = Math.floor(Math.random() * playlist.length);
+        } while (randomIndex === currentTrackIndex && playlist.length > 1);
         
-        <div class="controles">
-            <button onclick="cambiarTema(-1)">&lt;&lt; ANT</button>
-            <button onclick="saltarTiempo(-10)">-10S</button>
-            <button onclick="togglePlayPausa()">PLAY / PAUSE</button>
-            <button onclick="saltarTiempo(10)">+10S</button>
-            <button onclick="cambiarTema(1)">SIG &gt;&gt;</button>
-        </div>
-    </div>
+        currentTrackIndex = randomIndex;
+      } else {
+        currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+      }
 
-    <!-- Módulo Catálogo de Álbumes -->
-    <div class="seccion">
-        <h3>Catálogo de Álbumes</h3>
-        <input type="text" id="buscador-album" placeholder="Buscar artista o álbum..." onkeyup="filtrarAlbumes()">
-        <ul id="lista-albumes" class="lista"></ul>
-    </div>
+      loadTrack(currentTrackIndex);
+      playAudio();
+    }
 
-    <!-- Módulo Pistas del Álbum Actual -->
-    <div class="seccion">
-        <h3>Pistas de la Lista Actual</h3>
-        <ul id="lista-pistas" class="lista"></ul>
-    </div>
+    function playPrevTrack() {
+      if (playlist.length === 0) return;
+      currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+      loadTrack(currentTrackIndex);
+      playAudio();
+    }
 
-    <!-- Módulo Listas Personalizadas (Memoria Local) -->
-    <div class="seccion">
-        <h3>Listas Guardadas (Memoria Local)</h3>
-        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-            <input type="text" id="nombre-nueva-lista" placeholder="Nombre de lista nueva..." style="margin-bottom: 0;">
-            <button class="btn-accion" onclick="crearListaPropia()">Crear</button>
-        </div>
-        <div id="contenedor-listas-propias"></div>
-    </div>
+    // Eventos Controles
+    btnPlay.addEventListener('click', () => {
+      if (isPlaying) {
+        pauseAudio();
+      } else {
+        if (!audio.src) loadTrack(currentTrackIndex);
+        playAudio();
+      }
+    });
 
-    <script>
-        let baseAlbumes = [];
-        let pistasCargadas = [];
-        let indiceActual = -1;
-        let listasPersonalizadas = JSON.parse(localStorage.getItem('mis_listas')) || {};
+    btnNext.addEventListener('click', playNextTrack);
+    btnPrev.addEventListener('click', playPrevTrack);
 
-        const reproductor = document.getElementById('reproductor');
-        const infoPista = document.getElementById('info-pista');
-        const listaAlbumesUI = document.getElementById('lista-albumes');
-        const listaPistasUI = document.getElementById('lista-pistas');
+    btnShuffle.addEventListener('click', () => {
+      isShuffle = !isShuffle;
+      btnShuffle.classList.toggle('active', isShuffle);
+    });
 
-        // --- MOTOR DEL VISUALIZADOR DE ONDA (WEB AUDIO API) ---
-        let audioCtx;
-        let analizador;
-        let fuenteNodo;
-        let visualizadorInicializado = false;
+    volumeSlider.addEventListener('input', (e) => {
+      audio.volume = e.target.value;
+    });
 
-        const canvas = document.getElementById('visualizador');
-        const canvasCtx = canvas.getContext('2d');
+    audio.addEventListener('ended', playNextTrack);
 
-        function inicializarVisualizador() {
-            if (visualizadorInicializado) return;
-            
-            try {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                analizador = audioCtx.createAnalyser();
-                analizador.fftSize = 2048;
-                
-                fuenteNodo = audioCtx.createMediaElementSource(reproductor);
-                fuenteNodo.connect(analizador);
-                analizador.connect(audioCtx.destination);
-                
-                visualizadorInicializado = true;
-                dibujarOsciloscopio();
-            } catch (e) {
-                console.error("Error al inicializar AudioContext:", e);
-            }
-        }
+    // Ajuste de tamaño Canvas
+    function resizeCanvas() {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+    }
 
-        function dibujarOsciloscopio() {
-            requestAnimationFrame(dibujarOsciloscopio);
+    window.addEventListener('resize', resizeCanvas);
 
-            const bufferLongitud = analizador.frequencyBinCount;
-            const datosTiempo = new Uint8Array(bufferLongitud);
-            analizador.getByteTimeDomainData(datosTiempo);
-
-            canvasCtx.fillStyle = '#050505';
-            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-
-            canvasCtx.lineWidth = 2;
-            canvasCtx.strokeStyle = '#00ff66';
-            canvasCtx.beginPath();
-
-            const anchoAncho = (canvas.width * 1.0) / bufferLongitud;
-            let x = 0;
-
-            for (let i = 0; i < bufferLongitud; i++) {
-                const v = datosTiempo[i] / 128.0;
-                const y = (v * canvas.height) / 2;
-
-                if (i === 0) {
-                    canvasCtx.moveTo(x, y);
-                } else {
-                    canvasCtx.lineTo(x, y);
-                }
-                x += anchoAncho;
-            }
-
-            canvasCtx.lineTo(canvas.width, canvas.height / 2);
-            canvasCtx.stroke();
-        }
-
-        // --- CARGA DE DATOS Y CATALOGO ---
-        fetch('lista.json')
-            .then(res => res.json())
-            .then(datos => {
-                baseAlbumes = datos;
-                renderizarAlbumes(baseAlbumes);
-            })
-            .catch(err => console.error("Error al cargar lista.json:", err));
-
-        function renderizarAlbumes(lista) {
-            listaAlbumesUI.innerHTML = '';
-            lista.forEach((item) => {
-                let li = document.createElement('li');
-                
-                if (item.item_id) {
-                    li.innerHTML = `<span><strong>${item.artista}</strong> - ${item.album} (Álbum)</span>
-                                    <button class="btn-accion" onclick="cargarAlbum('${item.item_id}', '${escapeQuotes(item.artista)}', '${escapeQuotes(item.album)}')">Cargar Álbum</button>`;
-                } else if (item.url_mp3) {
-                    li.innerHTML = `<span><strong>${item.artista}</strong> - ${item.album} (Pista)</span>
-                                    <button class="btn-accion" onclick="cargarTemaIndividual('${escapeQuotes(item.artista)}', '${escapeQuotes(item.album)}', '${escapeQuotes(item.url_mp3)}')">Cargar Tema</button>`;
-                }
-                listaAlbumesUI.appendChild(li);
-            });
-        }
-
-        function filtrarAlbumes() {
-            const texto = document.getElementById('buscador-album').value.toLowerCase();
-            const filtrados = baseAlbumes.filter(item => 
-                item.artista.toLowerCase().includes(texto) ||
-                item.album.toLowerCase().includes(texto)
-            );
-            renderizarAlbumes(filtrados);
-        }
-
-        async function cargarAlbum(itemId, artista, album) {
-            pistasCargadas = [];
-            infoPista.textContent = "CARGANDO DESDE ARCHIVE.ORG...";
-            const urlApi = `https://archive.org/metadata/${itemId}`;
-
-            try {
-                const respuesta = await fetch(urlApi);
-                if (!respuesta.ok) throw new Error('Error al conectar con la API');
-                
-                const datos = await respuesta.json();
-
-                const archivosAudio = datos.files.filter(f => 
-                    f.format === 'VBR MP3' || 
-                    f.format === 'MP3' || 
-                    (f.name && f.name.toLowerCase().endsWith('.mp3'))
-                );
-
-                if (archivosAudio.length === 0) {
-                    alert('No se encontraron archivos MP3 en este recurso.');
-                    infoPista.textContent = "SELECCIONAR PISTA";
-                    return;
-                }
-
-                pistasCargadas = archivosAudio.map(f => ({
-                    titulo: `${artista} - ${f.title || f.name}`,
-                    url: `https://archive.org/download/${itemId}/${encodeURIComponent(f.name)}`
-                }));
-
-                renderizarPistas();
-                cargarPista(0);
-
-            } catch (e) {
-                console.error('Error al procesar metadatos:', e);
-                alert('No se pudieron obtener las pistas del álbum.');
-                infoPista.textContent = "ERROR AL CARGAR";
-            }
-        }
-
-        function cargarTemaIndividual(artista, album, url) {
-            pistasCargadas = [{
-                titulo: `${artista} - ${album}`,
-                url: url
-            }];
-            renderizarPistas();
-            cargarPista(0);
-        }
-
-        function renderizarPistas() {
-            listaPistasUI.innerHTML = '';
-            pistasCargadas.forEach((pista, idx) => {
-                let li = document.createElement('li');
-                if (idx === indiceActual) li.classList.add('activo');
-                
-                li.innerHTML = `<span onclick="cargarPista(${idx})" style="cursor:pointer; flex-grow: 1;">${pista.titulo}</span>
-                                <button class="btn-accion" onclick="agregarAPistaGuardada('${escapeQuotes(pista.titulo)}', '${escapeQuotes(pista.url)}')">+ GUARDAR</button>`;
-                listaPistasUI.appendChild(li);
-            });
-        }
-
-        function escapeQuotes(cadena) {
-            return cadena ? cadena.replace(/'/g, "\\'") : '';
-        }
-
-        function cargarPista(indice) {
-            if (indice >= 0 && indice < pistasCargadas.length) {
-                indiceActual = indice;
-                reproductor.src = pistasCargadas[indiceActual].url;
-                infoPista.textContent = pistasCargadas[indiceActual].titulo;
-                
-                // Activar audio context para el osciloscopio
-                inicializarVisualizador();
-                if (audioCtx && audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-
-                reproductor.play();
-                renderizarPistas();
-            }
-        }
-
-        // --- CONTROLES DE REPRODUCCIÓN ---
-        function togglePlayPausa() {
-            inicializarVisualizador();
-            if (audioCtx && audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-
-            if (reproductor.paused) {
-                reproductor.play();
-            } else {
-                reproductor.pause();
-            }
-        }
-
-        function saltarTiempo(segundos) {
-            reproductor.currentTime += segundos;
-        }
-
-        function cambiarTema(direccion) {
-            cargarPista(indiceActual + direccion);
-        }
-
-        reproductor.onended = () => cambiarTema(1);
-
-        // --- MEMORIA LOCAL (LOCALSTORAGE) ---
-        function crearListaPropia() {
-            const input = document.getElementById('nombre-nueva-lista');
-            const nombre = input.value.trim();
-            if (nombre && !listasPersonalizadas[nombre]) {
-                listasPersonalizadas[nombre] = [];
-                guardarListasEnStorage();
-                input.value = '';
-                renderizarListasPropia();
-            }
-        }
-
-        function agregarAPistaGuardada(titulo, url) {
-            const nombresListas = Object.keys(listasPersonalizadas);
-            if (nombresListas.length === 0) {
-                alert('Cree una lista personalizada en el módulo inferior primero.');
-                return;
-            }
-            const destino = prompt(`Escriba el nombre de la lista de destino:\n${nombresListas.join('\n')}`);
-            if (destino && listasPersonalizadas[destino]) {
-                listasPersonalizadas[destino].push({ titulo, url });
-                guardarListasEnStorage();
-                renderizarListasPropia();
-            } else if (destino) {
-                alert('La lista especificada no existe.');
-            }
-        }
-
-        function cargarListaPersonalizada(nombreLista) {
-            pistasCargadas = listasPersonalizadas[nombreLista];
-            renderizarPistas();
-            if (pistasCargadas.length > 0) cargarPista(0);
-        }
-
-        function guardarListasEnStorage() {
-            localStorage.setItem('mis_listas', JSON.stringify(listasPersonalizadas));
-        }
-
-        function renderizarListasPropia() {
-            const contenedor = document.getElementById('contenedor-listas-propias');
-            contenedor.innerHTML = '';
-            for (let nombre in listasPersonalizadas) {
-                let div = document.createElement('div');
-                div.style.margin = "8px 0";
-                div.style.display = "flex";
-                div.style.justifyContent = "space-between";
-                div.style.alignItems = "center";
-                div.innerHTML = `<span><strong>${nombre}</strong> (${listasPersonalizadas[nombre].length} temas)</span>
-                                 <button class="btn-accion" onclick="cargarListaPersonalizada('${nombre}')">REPRODUCIR</button>`;
-                contenedor.appendChild(div);
-            }
-        }
-
-        // Carga inicial
-        renderizarListasPropia();
-    </script>
+    // Inicialización
+    window.addEventListener('DOMContentLoaded', () => {
+      resizeCanvas();
+      renderCatalog();
+      renderPlaylist();
+      loadTrack(currentTrackIndex);
+      drawOscilloscope();
+    });
+  </script>
 </body>
 </html>
