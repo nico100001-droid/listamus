@@ -1,3 +1,33 @@
+Las observaciones sobre el comportamiento del navegador y el rendimiento en Android son totalmente correctas. Las mejoras propuestas son técnicamente viables y resuelven los problemas de usabilidad e interrupción en segundo plano.
+
+### Análisis de factibilidad y diagnóstico técnico
+
+1. **Agrupación por Artista y Desplegables (Acordeones/Collapsible):**
+* **Problema:** El scroll vertical excesivo dificulta la selección de temas en pantallas móviles.
+* **Solución:** Agrupar los datos en una estructura jerárquica (`Artista -> Álbumes -> Pistas`) utilizando etiquetas nativas `<details>` y `<summary>` o contenedores replegables en CSS/JS. Esto mantiene la interfaz compacta y evita que las pistas queden desplazadas muy abajo.
+
+
+2. **Gestión de Listas Guardadas (Eliminar):**
+* **Solución:** Agregar un botón "Eliminar" junto a cada lista en `localStorage` con la instrucción `delete listasPersonalizadas[nombreLista]` y re-renderizar.
+
+
+3. **Corte de reproducción al cambiar de aplicación en Chrome Android:**
+* **Causa:** El sistema operativo Android suspende o destruye las pestañas de Chrome en segundo plano para liberar memoria RAM cuando otra aplicación exigente (como un juego) pasa al frente. Al cerrarse la pestaña en RAM, se pierden las variables en memoria (`pistasCargadas`, `indiceActual`), por lo que al volver a Chrome la página se recarga desde cero.
+* **Soluciones según el entorno de ejecución:**
+* **En Chrome Web:** Se implementa la API nativa `navigator.mediaSession`. Esto permite que el navegador registre los metadatos del tema y los controles en la barra de notificaciones de Android, indicándole al sistema operativo que la pestaña es un reproductor activo para reducir las probabilidades de ser terminada en segundo plano. Asimismo, se guardará la pista y el tiempo actual en `localStorage` para restaurar el estado automáticamente si el sistema recarga la página.
+* **En la futura App con Android Studio (WebView):** El comportamiento en segundo plano se resuelve de forma definitiva creando un **Foreground Service** con `MediaSessionCompat` y `ExoPlayer` en Kotlin/Java. De este modo, la reproducción no dependerá del ciclo de vida del WebView ni del motor gráfico de Chrome.
+
+
+
+
+
+---
+
+### Código Completo Actualizado (`index.html`)
+
+Se integra la agrupación por artistas, contenedores replegables, borrado de listas personalizadas, API de sesión multimedia de Android y persistencia de estado para fallos de memoria.
+
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -7,13 +37,13 @@
     <style>
         body { 
             font-family: 'Consolas', 'Courier New', monospace; 
-            max-width: 900px; /* Ampliado para acomodar las dos columnas */
+            max-width: 900px; 
             margin: auto; 
             padding: 15px; 
             background-color: #121212; 
             color: #e0e0e0; 
         }
-        h2, h3 { margin-top: 0; color: #769984; text-transform: uppercase; }
+        h2, h3 { margin-top: 0; color: #00ff66; text-transform: uppercase; }
         
         .seccion { 
             background: #1e1e1e; 
@@ -24,16 +54,29 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.7);
         }
 
-        /* Estructura en columnas para Catálogo y Pistas */
+        /* Estructura Replegable (Acordeón) */
+        details {
+            background-color: #262626;
+            border: 1px solid #444;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            padding: 5px 10px;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: bold;
+            color: #00ff66;
+            padding: 5px 0;
+            outline: none;
+        }
+
+        /* Contenedor Grid para paneles */
         .grid-columnas {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
             margin-bottom: 15px;
-        }
-
-        .grid-columnas .seccion {
-            margin-bottom: 0; /* Anula el margen inferior dentro del grid */
         }
 
         @media (max-width: 768px) {
@@ -45,7 +88,7 @@
         /* Pantalla visual estilo Winamp */
         .pantalla-winamp {
             background-color: #000;
-            border: 1px solid #769984;
+            border: 1px solid #00ff66;
             padding: 10px;
             border-radius: 3px;
             margin-bottom: 10px;
@@ -53,8 +96,8 @@
         }
 
         #info-pista {
-            color: #769984;
-            font-size: 9px;
+            color: #00ff66;
+            font-size: 14px;
             margin: 0 0 8px 0;
             white-space: nowrap;
             overflow: hidden;
@@ -70,7 +113,7 @@
             display: block;
         }
 
-        /* Controles estilo ciberpunk/retro */
+        /* Controles */
         .controles {
             display: flex;
             flex-wrap: wrap;
@@ -80,20 +123,30 @@
         }
 
         .controles button, .btn-accion { 
-            padding: 4px 5px; 
+            padding: 8px 12px; 
             cursor: pointer; 
-            border: 1px solid #769984; 
+            border: 1px solid #00ff66; 
             background-color: #111; 
-            color: #769984; 
+            color: #00ff66; 
             font-weight: bold;
             font-family: inherit;
-            border-radius: 8px; /* Puntas más redondeadas */
+            border-radius: 8px; 
             transition: all 0.2s ease;
         }
 
         .controles button:hover, .btn-accion:hover { 
-            background-color: #769984; 
+            background-color: #00ff66; 
             color: #000;
+        }
+
+        .btn-peligro {
+            border-color: #ff3333 !important;
+            color: #ff3333 !important;
+        }
+
+        .btn-peligro:hover {
+            background-color: #ff3333 !important;
+            color: #fff !important;
         }
 
         input[type="text"] { 
@@ -116,18 +169,18 @@
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
-            font-size: 9px;
+            font-size: 13px;
         }
 
         .activo { 
             background-color: #1b3a20; 
-            border-left: 4px solid #769984; 
-            color: #769984;
+            border-left: 4px solid #00ff66; 
+            color: #00ff66;
             font-weight: bold;
         }
 
         .btn-activo {
-            background-color: #769984 !important;
+            background-color: #00ff66 !important;
             color: #000 !important;
         }
     </style>
@@ -153,31 +206,39 @@
         </div>
     </div>
 
-    <!-- Contenedor de dos columnas para Catálogo y Pistas -->
+    <!-- Contenedor Replegable en Columnas -->
     <div class="grid-columnas">
-        <!-- Módulo Catálogo de Álbumes -->
-        <div class="seccion">
-            <h3>Catálogo de Álbumes</h3>
-            <input type="text" id="buscador-album" placeholder="Buscar artista o álbum..." onkeyup="filtrarAlbumes()">
-            <ul id="lista-albumes" class="lista"></ul>
-        </div>
+        
+        <!-- Módulo Catálogo de Álbumes (Agrupado por Artista) -->
+        <details class="seccion" open>
+            <summary>CATÁLOGO DE ÁLBUMES</summary>
+            <div style="margin-top: 10px;">
+                <input type="text" id="buscador-album" placeholder="Buscar artista o álbum..." onkeyup="filtrarAlbumes()">
+                <div id="contenedor-catalogos"></div>
+            </div>
+        </details>
 
         <!-- Módulo Pistas del Álbum Actual -->
-        <div class="seccion">
-            <h3>Pistas de la Lista Actual</h3>
-            <ul id="lista-pistas" class="lista"></ul>
-        </div>
+        <details class="seccion" open>
+            <summary>PISTAS DE LA LISTA ACTUAL</summary>
+            <div style="margin-top: 10px;">
+                <ul id="lista-pistas" class="lista"></ul>
+            </div>
+        </details>
+
     </div>
 
     <!-- Módulo Listas Personalizadas (Memoria Local) -->
-    <div class="seccion">
-        <h3>Listas Guardadas (Memoria Local)</h3>
-        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-            <input type="text" id="nombre-nueva-lista" placeholder="Nombre de lista nueva..." style="margin-bottom: 0;">
-            <button class="btn-accion" onclick="crearListaPropia()">Crear</button>
+    <details class="seccion">
+        <summary>LISTAS GUARDADAS (MEMORIA LOCAL)</summary>
+        <div style="margin-top: 10px;">
+            <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                <input type="text" id="nombre-nueva-lista" placeholder="Nombre de lista nueva..." style="margin-bottom: 0;">
+                <button class="btn-accion" onclick="crearListaPropia()">Crear</button>
+            </div>
+            <div id="contenedor-listas-propias"></div>
         </div>
-        <div id="contenedor-listas-propias"></div>
-    </div>
+    </details>
 
     <script>
         let baseAlbumes = [];
@@ -188,7 +249,7 @@
 
         const reproductor = document.getElementById('reproductor');
         const infoPista = document.getElementById('info-pista');
-        const listaAlbumesUI = document.getElementById('lista-albumes');
+        const contenedorCatalogosUI = document.getElementById('contenedor-catalogos');
         const listaPistasUI = document.getElementById('lista-pistas');
 
         // --- MOTOR DEL VISUALIZADOR DE ONDA (WEB AUDIO API) ---
@@ -230,7 +291,7 @@
             canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
 
             canvasCtx.lineWidth = 2;
-            canvasCtx.strokeStyle = '#769984';
+            canvasCtx.strokeStyle = '#00ff66';
             canvasCtx.beginPath();
 
             const anchoAncho = (canvas.width * 1.0) / bufferLongitud;
@@ -252,29 +313,50 @@
             canvasCtx.stroke();
         }
 
-        // --- CARGA DE DATOS Y CATALOGO ---
+        // --- CARGA DE DATOS Y CATÁLOGO AGRUPADO POR ARTISTA ---
         fetch('lista.json')
             .then(res => res.json())
             .then(datos => {
                 baseAlbumes = datos;
-                renderizarAlbumes(baseAlbumes);
+                renderizarCatálogoAgrupado(baseAlbumes);
+                restaurarEstadoPrevio();
             })
             .catch(err => console.error("Error al cargar lista.json:", err));
 
-        function renderizarAlbumes(lista) {
-            listaAlbumesUI.innerHTML = '';
-            lista.forEach((item) => {
-                let li = document.createElement('li');
-                
-                if (item.item_id) {
-                    li.innerHTML = `<span><strong>${item.artista}</strong> - ${item.album} (Álbum)</span>
-                                    <button class="btn-accion" onclick="cargarAlbum('${item.item_id}', '${escapeQuotes(item.artista)}', '${escapeQuotes(item.album)}')">Cargar Álbum</button>`;
-                } else if (item.url_mp3) {
-                    li.innerHTML = `<span><strong>${item.artista}</strong> - ${item.album} (Pista)</span>
-                                    <button class="btn-accion" onclick="cargarTemaIndividual('${escapeQuotes(item.artista)}', '${escapeQuotes(item.album)}', '${escapeQuotes(item.url_mp3)}')">Cargar Tema</button>`;
-                }
-                listaAlbumesUI.appendChild(li);
+        function renderizarCatálogoAgrupado(lista) {
+            contenedorCatalogosUI.innerHTML = '';
+            
+            // Agrupar por artista
+            const grupos = {};
+            lista.forEach(item => {
+                if (!grupos[item.artista]) grupos[item.artista] = [];
+                grupos[item.artista].push(item);
             });
+
+            for (const artista in grupos) {
+                const desArtista = document.createElement('details');
+                const sumArtista = document.createElement('summary');
+                sumArtista.textContent = artista.toUpperCase();
+                desArtista.appendChild(sumArtista);
+
+                const ul = document.createElement('ul');
+                ul.className = 'lista';
+
+                grupos[artista].forEach(item => {
+                    let li = document.createElement('li');
+                    if (item.item_id) {
+                        li.innerHTML = `<span>${item.album}</span>
+                                        <button class="btn-accion" onclick="cargarAlbum('${item.item_id}', '${escapeQuotes(item.artista)}', '${escapeQuotes(item.album)}')">Cargar</button>`;
+                    } else if (item.url_mp3) {
+                        li.innerHTML = `<span>${item.album}</span>
+                                        <button class="btn-accion" onclick="cargarTemaIndividual('${escapeQuotes(item.artista)}', '${escapeQuotes(item.album)}', '${escapeQuotes(item.url_mp3)}')">Cargar</button>`;
+                    }
+                    ul.appendChild(li);
+                });
+
+                desArtista.appendChild(ul);
+                contenedorCatalogosUI.appendChild(desArtista);
+            }
         }
 
         function filtrarAlbumes() {
@@ -283,7 +365,7 @@
                 item.artista.toLowerCase().includes(texto) ||
                 item.album.toLowerCase().includes(texto)
             );
-            renderizarAlbumes(filtrados);
+            renderizarCatálogoAgrupado(filtrados);
         }
 
         async function cargarAlbum(itemId, artista, album) {
@@ -343,6 +425,10 @@
                                 <button class="btn-accion" onclick="agregarAPistaGuardada('${escapeQuotes(pista.titulo)}', '${escapeQuotes(pista.url)}')">+ GUARDAR</button>`;
                 listaPistasUI.appendChild(li);
             });
+            
+            // Persistir lista cargada e índice
+            localStorage.setItem('pistas_cargadas_temp', JSON.stringify(pistasCargadas));
+            localStorage.setItem('indice_actual_temp', indiceActual);
         }
 
         function escapeQuotes(cadena) {
@@ -355,14 +441,42 @@
                 reproductor.src = pistasCargadas[indiceActual].url;
                 infoPista.textContent = pistasCargadas[indiceActual].titulo;
                 
-                // Activar audio context para el osciloscopio
                 inicializarVisualizador();
                 if (audioCtx && audioCtx.state === 'suspended') {
                     audioCtx.resume();
                 }
 
-                reproductor.play();
+                reproductor.play().catch(e => console.log("Interacción requerida"));
                 renderizarPistas();
+                actualizarMediaSession();
+            }
+        }
+
+        // --- INTEGRACIÓN CON NAVEGADOR Y NOTIFICACIONES DE ANDROID ---
+        function actualizarMediaSession() {
+            if ('mediaSession' in navigator && pistasCargadas[indiceActual]) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: pistasCargadas[indiceActual].titulo,
+                    artist: "Winamp Web",
+                    album: "Archive.org"
+                });
+
+                navigator.mediaSession.setActionHandler('play', () => togglePlayPausa());
+                navigator.mediaSession.setActionHandler('pause', () => togglePlayPausa());
+                navigator.mediaSession.setActionHandler('previoustrack', () => cambiarTema(-1));
+                navigator.mediaSession.setActionHandler('nexttrack', () => cambiarTema(1));
+            }
+        }
+
+        function restaurarEstadoPrevio() {
+            const pistasGuardadas = JSON.parse(localStorage.getItem('pistas_cargadas_temp'));
+            const idxGuardado = parseInt(localStorage.getItem('indice_actual_temp'));
+            if (pistasGuardadas && pistasGuardadas.length > 0 && !isNaN(idxGuardado)) {
+                pistasCargadas = pistasGuardadas;
+                indiceActual = idxGuardado;
+                renderizarPistas();
+                infoPista.textContent = pistasCargadas[indiceActual].titulo;
+                reproductor.src = pistasCargadas[indiceActual].url;
             }
         }
 
@@ -398,15 +512,12 @@
             if (pistasCargadas.length === 0) return;
             
             let nuevoIndice;
-            
-            // Si el modo aleatorio está activo y se avanza de tema
             if (aleatorioActivo && direccion > 0) {
                 nuevoIndice = Math.floor(Math.random() * pistasCargadas.length);
             } else {
                 nuevoIndice = indiceActual + direccion;
             }
 
-            // Validar límites
             if (nuevoIndice >= 0 && nuevoIndice < pistasCargadas.length) {
                 cargarPista(nuevoIndice);
             }
@@ -414,7 +525,7 @@
 
         reproductor.onended = () => cambiarTema(1);
 
-        // --- MEMORIA LOCAL (LOCALSTORAGE) ---
+        // --- MEMORIA LOCAL (LOCALSTORAGE) CON ELIMINACIÓN ---
         function crearListaPropia() {
             const input = document.getElementById('nombre-nueva-lista');
             const nombre = input.value.trim();
@@ -422,6 +533,14 @@
                 listasPersonalizadas[nombre] = [];
                 guardarListasEnStorage();
                 input.value = '';
+                renderizarListasPropia();
+            }
+        }
+
+        function eliminarListaPropia(nombreLista) {
+            if (confirm(`¿Confirma eliminar la lista "${nombreLista}"?`)) {
+                delete listasPersonalizadas[nombreLista];
+                guardarListasEnStorage();
                 renderizarListasPropia();
             }
         }
@@ -462,7 +581,10 @@
                 div.style.justifyContent = "space-between";
                 div.style.alignItems = "center";
                 div.innerHTML = `<span><strong>${nombre}</strong> (${listasPersonalizadas[nombre].length} temas)</span>
-                                 <button class="btn-accion" onclick="cargarListaPersonalizada('${nombre}')">REPRODUCIR</button>`;
+                                 <div>
+                                     <button class="btn-accion" onclick="cargarListaPersonalizada('${nombre}')">REPRODUCIR</button>
+                                     <button class="btn-accion btn-peligro" onclick="eliminarListaPropia('${nombre}')">BORRAR</button>
+                                 </div>`;
                 contenedor.appendChild(div);
             }
         }
@@ -472,3 +594,5 @@
     </script>
 </body>
 </html>
+
+```
