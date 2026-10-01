@@ -1,33 +1,3 @@
-Las observaciones sobre el comportamiento del navegador y el rendimiento en Android son totalmente correctas. Las mejoras propuestas son técnicamente viables y resuelven los problemas de usabilidad e interrupción en segundo plano.
-
-### Análisis de factibilidad y diagnóstico técnico
-
-1. **Agrupación por Artista y Desplegables (Acordeones/Collapsible):**
-* **Problema:** El scroll vertical excesivo dificulta la selección de temas en pantallas móviles.
-* **Solución:** Agrupar los datos en una estructura jerárquica (`Artista -> Álbumes -> Pistas`) utilizando etiquetas nativas `<details>` y `<summary>` o contenedores replegables en CSS/JS. Esto mantiene la interfaz compacta y evita que las pistas queden desplazadas muy abajo.
-
-
-2. **Gestión de Listas Guardadas (Eliminar):**
-* **Solución:** Agregar un botón "Eliminar" junto a cada lista en `localStorage` con la instrucción `delete listasPersonalizadas[nombreLista]` y re-renderizar.
-
-
-3. **Corte de reproducción al cambiar de aplicación en Chrome Android:**
-* **Causa:** El sistema operativo Android suspende o destruye las pestañas de Chrome en segundo plano para liberar memoria RAM cuando otra aplicación exigente (como un juego) pasa al frente. Al cerrarse la pestaña en RAM, se pierden las variables en memoria (`pistasCargadas`, `indiceActual`), por lo que al volver a Chrome la página se recarga desde cero.
-* **Soluciones según el entorno de ejecución:**
-* **En Chrome Web:** Se implementa la API nativa `navigator.mediaSession`. Esto permite que el navegador registre los metadatos del tema y los controles en la barra de notificaciones de Android, indicándole al sistema operativo que la pestaña es un reproductor activo para reducir las probabilidades de ser terminada en segundo plano. Asimismo, se guardará la pista y el tiempo actual en `localStorage` para restaurar el estado automáticamente si el sistema recarga la página.
-* **En la futura App con Android Studio (WebView):** El comportamiento en segundo plano se resuelve de forma definitiva creando un **Foreground Service** con `MediaSessionCompat` y `ExoPlayer` en Kotlin/Java. De este modo, la reproducción no dependerá del ciclo de vida del WebView ni del motor gráfico de Chrome.
-
-
-
-
-
----
-
-### Código Completo Actualizado (`index.html`)
-
-Se integra la agrupación por artistas, contenedores replegables, borrado de listas personalizadas, API de sesión multimedia de Android y persistencia de estado para fallos de memoria.
-
-```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -594,5 +564,3 @@ Se integra la agrupación por artistas, contenedores replegables, borrado de lis
     </script>
 </body>
 </html>
-
-```
